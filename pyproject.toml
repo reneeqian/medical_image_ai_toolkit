@@ -16,3 +16,6 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+  "requirement(id): Traceability requirement ID",
+]
