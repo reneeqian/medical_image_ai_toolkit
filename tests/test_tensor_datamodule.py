@@ -3,7 +3,7 @@ import torch
 from pathlib import Path
 
 from medical_image_ai_toolkit.datamodules.tensor_datamodule import TensorDatamodule
-from medical_image_ai_toolkit.evidence.evidence_report import EvidenceReport
+from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 @pytest.mark.requirement("MIT-FR-01")
 def test_MIT_FR_01_tensor_datamodule_exposes_dataset_length():

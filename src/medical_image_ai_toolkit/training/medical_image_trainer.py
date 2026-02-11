@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from medical_image_ai_toolkit.evidence.evidence_report import EvidenceReport
+from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 
 class MedicalImageTrainer:

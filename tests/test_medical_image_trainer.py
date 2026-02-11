@@ -7,7 +7,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 
 from medical_image_ai_toolkit.training.medical_image_trainer import MedicalImageTrainer
-from medical_image_ai_toolkit.evidence.evidence_report import EvidenceReport
+from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 
 # -------------------------------

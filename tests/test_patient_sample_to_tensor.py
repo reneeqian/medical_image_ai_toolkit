@@ -13,7 +13,7 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from medical_image_ai_toolkit.evidence.evidence_report import EvidenceReport
+from regulatory_tools.evidence.evidence_report import EvidenceReport
 from medical_image_ai_toolkit.adapters.patient_sample_to_tensor import PatientSampleTensorAdapter
 from medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
 
