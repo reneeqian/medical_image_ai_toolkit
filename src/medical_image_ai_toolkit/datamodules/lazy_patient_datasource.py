@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Sequence, Callable, Optional, Dict
 from torch.utils.data import Dataset
 
-from src.medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
+from medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
 
 
 class LazyPatientDataSource(Dataset):
