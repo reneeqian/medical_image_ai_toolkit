@@ -8,6 +8,11 @@ version = "0.1.0"
 description = "Reusable medical image AI toolkit with regulatory-grade evidence and data contracts"
 requires-python = ">=3.10"
 
+dependencies = [
+    "numpy",
+    "torch",
+    "matplotlib",
+]
 [tool.setuptools]
 package-dir = {"" = "src"}
 

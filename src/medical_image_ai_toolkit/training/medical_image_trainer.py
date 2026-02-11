@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import json
 import time
+import uuid
+from datetime import datetime
 import random
 import numpy as np
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+import hashlib
+import sys
 
 import torch
 import torch.nn as nn
@@ -43,6 +47,11 @@ class MedicalImageTrainer:
     ):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # --- Immutable run identity ---
+        self.run_id = str(uuid.uuid4())
+        self.run_timestamp = datetime.utcnow().isoformat()
+
 
         # --- Deferred training dependencies ---
         self.model = model
@@ -78,6 +87,16 @@ class MedicalImageTrainer:
         self._initialize_defaults_if_needed()
         self._validate_ready_for_training()
 
+        self._train_loader = train_loader
+        self._val_loader = val_loader
+
+        self.data_splits = {
+            "train_dataset_class": type(train_loader.dataset).__name__,
+            "val_dataset_class": type(val_loader.dataset).__name__,
+            "train_dataset_length": len(train_loader.dataset),
+            "val_dataset_length": len(val_loader.dataset),
+        }
+
         self._save_static_artifacts()
 
         for epoch in range(num_epochs):
@@ -88,6 +107,8 @@ class MedicalImageTrainer:
                 num_epochs=num_epochs,
             )
             self.history.append(epoch_record)
+
+        self._save_model_metadata()
 
         self._save_dynamic_artifacts()
         self._save_evidence_report()
@@ -132,9 +153,15 @@ class MedicalImageTrainer:
 
         if self.data_splits is None:
             self.data_splits = {
-                "train": "in-memory",
-                "val": "in-memory",
+                "train_dataset": type(self.train_loader.dataset).__name__
+                if hasattr(self, "_train_loader")
+                else "unknown",
+                "val_dataset": type(self.val_loader.dataset).__name__
+                if hasattr(self, "_val_loader")
+                else "unknown",
+                "split_seed": None,
             }
+
 
 
     # ------------------------------------------------------------------
@@ -174,6 +201,8 @@ class MedicalImageTrainer:
 
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
+        torch.use_deterministic_algorithms(True)
 
     # ------------------------------------------------------------------
     # EPOCH LOGIC
@@ -315,24 +344,52 @@ class MedicalImageTrainer:
     # ARTIFACTS
     # ------------------------------------------------------------------
 
+    def _save_model_metadata(self) -> None:
+        metadata = {
+            "run_id": self.run_id,
+            "timestamp": self.run_timestamp,
+            "model_class": type(self.model).__name__,
+            "optimizer_class": type(self.optimizer).__name__,
+            "loss_fn_class": type(self.loss_fn).__name__,
+            "epochs_completed": len(self.history),
+        }
+
+        with open(self.output_dir / "model_metadata.json", "w") as f:
+            json.dump(metadata, f, indent=2, sort_keys=True)
+
+
     def _save_static_artifacts(self) -> None:
-        with open(self.output_dir / "run_config.json", "w") as f:
-            json.dump(self.run_config, f, indent=2, sort_keys=True)
+        static_metadata = {
+            "run_id": self.run_id,
+            "run_timestamp": self.run_timestamp,
+            "toolkit_version": "0.1.0",  # replace with dynamic later
+            "python_version": sys.version,
+            "torch_version": torch.__version__,
+            "run_config": self.run_config,
+            "data_splits": self.data_splits,
+        }
 
-        with open(self.output_dir / "data_splits.json", "w") as f:
-            json.dump(self.data_splits, f, indent=2, sort_keys=True)
-
+        with open(self.output_dir / "run_metadata.json", "w") as f:
+            json.dump(static_metadata, f, indent=2, sort_keys=True)
 
     def _save_dynamic_artifacts(self) -> None:
         with open(self.output_dir / "metrics.json", "w") as f:
+            json.dump(self.history, f, indent=2, sort_keys=True)
+
+        model_path = self.output_dir / "model.pt"
+        torch.save(self.model.state_dict(), model_path)
+
+        model_hash = self._hash_file(model_path)
+
+        with open(self.output_dir / "artifact_hashes.json", "w") as f:
             json.dump(
-                self.history,
+                {
+                    "model_sha256": model_hash,
+                },
                 f,
                 indent=2,
-                sort_keys=True,  
+                sort_keys=True,
             )
-
-        torch.save(self.model.state_dict(), self.output_dir / "model.pt")
 
     def _save_evidence_report(self) -> None:
         evidence = EvidenceReport(
@@ -390,3 +447,10 @@ class MedicalImageTrainer:
             plt.show()
         else:
             plt.close()
+
+    def _hash_file(self, path: Path) -> str:
+        sha256 = hashlib.sha256()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                sha256.update(chunk)
+        return sha256.hexdigest()
