@@ -6,7 +6,7 @@ from medical_image_ai_toolkit.datamodules.tensor_datamodule import TensorDatamod
 from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 @pytest.mark.requirement("MIT-FR-01")
-def test_MIT_FR_01_tensor_datamodule_exposes_dataset_length():
+def test_MIT_FR_01_tensor_datamodule_exposes_dataset_length(evidence_output_dir):
     report = EvidenceReport(
         subject="TensorDatamodule dataset length exposure"
     )
@@ -22,12 +22,12 @@ def test_MIT_FR_01_tensor_datamodule_exposes_dataset_length():
         context="len(dataset)=2",
     )
 
-    report.auto_save("MIT_FR_01_tensor_datamodule_exposes_dataset_length")
+    report.auto_save("MIT_FR_01_tensor_datamodule_exposes_dataset_length",evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("MIT-TR-01")
-def test_MIT_TR_01_tensor_datamodule_deterministic_ordering():
+def test_MIT_TR_01_tensor_datamodule_deterministic_ordering(evidence_output_dir):
     report = EvidenceReport(
         subject="Deterministic ordering of TensorDatamodule samples"
     )
@@ -47,11 +47,11 @@ def test_MIT_TR_01_tensor_datamodule_deterministic_ordering():
         context="first_patient_id=a",
     )
 
-    report.auto_save("MIT_TR_01_tensor_datamodule_deterministic_ordering")
+    report.auto_save("MIT_TR_01_tensor_datamodule_deterministic_ordering",evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 @pytest.mark.requirement("MIT-FR-01")
-def test_MIT_FR_01_tensor_datamodule_getitem_returns_sample():
+def test_MIT_FR_01_tensor_datamodule_getitem_returns_sample(evidence_output_dir):
     report = EvidenceReport(
         subject="TensorDatamodule __getitem__ behavior"
     )
@@ -68,11 +68,11 @@ def test_MIT_FR_01_tensor_datamodule_getitem_returns_sample():
         requirement_id="MIT-FR-01",
     )
 
-    report.auto_save("MIT_FR_01_tensor_datamodule_getitem_returns_sample")
+    report.auto_save("MIT_FR_01_tensor_datamodule_getitem_returns_sample",evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 @pytest.mark.requirement("MIT-NFR-01")
-def test_MIT_NFR_01_tensor_datamodule_empty_dataset_rejected():
+def test_MIT_NFR_01_tensor_datamodule_empty_dataset_rejected(evidence_output_dir):
     report = EvidenceReport(
         subject="TensorDatamodule validation of empty dataset"
     )
@@ -85,5 +85,5 @@ def test_MIT_NFR_01_tensor_datamodule_empty_dataset_rejected():
         requirement_id="MIT-NFR-01",
     )
 
-    report.auto_save("MIT_NFR_01_tensor_datamodule_empty_dataset_rejected")
+    report.auto_save("MIT_NFR_01_tensor_datamodule_empty_dataset_rejected", evidence_output_dir)
     assert not report.has_errors, report.summary()

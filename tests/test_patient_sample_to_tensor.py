@@ -35,7 +35,7 @@ def make_invalid_sample():
     )
 
 @pytest.mark.requirement("MIT-DR-03")
-def test_MIT_DR_03_patient_sample_converted_to_3d_tensor(sample):
+def test_MIT_DR_03_patient_sample_converted_to_3d_tensor(sample,evidence_output_dir):
     report = EvidenceReport(
         subject="PatientSample to tensor dimensionality and interface validation"
     )
@@ -74,11 +74,11 @@ def test_MIT_DR_03_patient_sample_converted_to_3d_tensor(sample):
         requirement_id="MIT-FR-03",
     )
 
-    report.auto_save("MIT_DR_03_patient_sample_converted_to_3d_tensor")
+    report.auto_save("MIT_DR_03_patient_sample_converted_to_3d_tensor",evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 @pytest.mark.requirement("MIT-DR-01")
-def test_MIT_DR_01_invalid_patient_sample_rejected():
+def test_MIT_DR_01_invalid_patient_sample_rejected(evidence_output_dir):
     report = EvidenceReport(
         subject="Invalid PatientSample rejection"
     )
@@ -94,5 +94,5 @@ def test_MIT_DR_01_invalid_patient_sample_rejected():
         requirement_id="MIT-DR-01",
     )
 
-    report.auto_save("MIT_DR_01_invalid_patient_sample_rejected")
+    report.auto_save("MIT_DR_01_invalid_patient_sample_rejected",evidence_output_dir)
     assert not report.has_errors, report.summary()

@@ -6,47 +6,47 @@ requirements:
 
   - id: MIT-DR-01
     category: Data Representation
-    title: PatientSample image_volume shall be a NumPy array.
+    description: PatientSample image_volume shall be a NumPy array.
     verification: Unit Test
 
   - id: MIT-DR-02
     category: Data Representation
-    title: PatientSample image_volume shall be three-dimensional (z,y,x).
+    description: PatientSample image_volume shall be three-dimensional (z,y,x).
     verification: Unit Test
 
   - id: MIT-DR-03
     category: Data Representation
-    title: PatientSample image_volume spatial dimensions shall be greater than zero.
+    description: PatientSample image_volume spatial dimensions shall be greater than zero.
     verification: Unit Test
 
   - id: MIT-DR-04
     category: Data Representation
-    title: PatientSample spacing shall be defined as (z,y,x) with all values greater than zero.
+    description: PatientSample spacing shall be defined as (z,y,x) with all values greater than zero.
     verification: Unit Test
 
   - id: MIT-DR-05
     category: Data Representation
-    title: PatientSample shall define a non-empty patient_id.
+    description: PatientSample shall define a non-empty patient_id.
     verification: Unit Test
 
   - id: MIT-DR-06
     category: Data Representation
-    title: Annotations may be optional but shall be valid if present.
+    description: Annotations may be optional but shall be valid if present.
     verification: Unit Test
 
   - id: MIT-DR-07
     category: Data Representation
-    title: Annotation slice indices shall be within volume bounds.
+    description: Annotation slice indices shall be within volume bounds.
     verification: Unit Test
 
   - id: MIT-DR-08
     category: Data Representation
-    title: Vector ROI contours shall be valid (N,2) and within image bounds.
+    description: Vector ROI contours shall be valid (N,2) and within image bounds.
     verification: Unit Test
 
   - id: MIT-DR-09
     category: Data Representation
-    title: All PatientSample invariants shall be enforced at a single validation boundary.
+    description: All PatientSample invariants shall be enforced at a single validation boundary.
     verification: Unit Test
 
 
@@ -56,37 +56,37 @@ requirements:
 
   - id: MIT-FR-01
     category: Dataset Interface
-    title: Datasets shall expose samples via a consistent PatientSample interface.
+    description: Datasets shall expose samples via a consistent PatientSample interface.
     verification: Unit Test
 
   - id: MIT-FR-02
     category: Dataset Interface
-    title: Dataset validation logic shall be isolated from dataset iteration logic.
+    description: Dataset validation logic shall be isolated from dataset iteration logic.
     verification: Unit Test
 
   - id: MIT-FR-03
     category: Training
-    title: Training process shall support configurable models, optimizers, and loss functions.
+    description: Training process shall support configurable models, optimizers, and loss functions.
     verification: Unit Test
 
   - id: MIT-FR-04
     category: Training
-    title: Training process shall support configurable hyperparameters.
+    description: Training process shall support configurable hyperparameters.
     verification: Unit Test
 
   - id: MIT-FR-05
     category: Hyperparameter Sweeps
-    title: Toolkit shall support structured hyperparameter sweep execution.
+    description: Toolkit shall support structured hyperparameter sweep execution.
     verification: Integration Test
 
   - id: MIT-FR-06
     category: Model Optimization
-    title: Toolkit shall support model pruning or compression workflows.
+    description: Toolkit shall support model pruning or compression workflows.
     verification: Integration Test
 
   - id: MIT-FR-07
     category: Model Optimization
-    title: Optimization workflows shall persist pre- and post-optimization artifacts.
+    description: Optimization workflows shall persist pre- and post-optimization artifacts.
     verification: Integration Test
 
 
@@ -96,22 +96,22 @@ requirements:
 
   - id: MIT-MAR-01
     category: Model Artifacts
-    title: Training runs shall persist model artifacts traceable to a specific run.
+    description: Training runs shall persist model artifacts traceable to a specific run.
     verification: Unit Test
 
   - id: MIT-MAR-02
     category: Model Artifacts
-    title: Training runs shall persist model checkpoints per epoch.
+    description: Training runs shall persist model checkpoints per epoch.
     verification: Unit Test
 
   - id: MIT-MAR-03
     category: Model Artifacts
-    title: Training runs shall persist final trained model state.
+    description: Training runs shall persist final trained model state.
     verification: Unit Test
 
   - id: MIT-MAR-04
     category: Model Artifacts
-    title: All persisted artifacts shall be immutable once written.
+    description: All persisted artifacts shall be immutable once written.
     verification: Integration Test
 
 
@@ -121,42 +121,42 @@ requirements:
 
   - id: MIT-TR-01
     category: Determinism
-    title: Training runs shall be deterministic given identical seeds and configuration.
+    description: Training runs shall be deterministic given identical seeds and configuration.
     verification: Unit Test
 
   - id: MIT-TR-02
     category: Traceability
-    title: Each training run shall generate a unique and immutable run identifier.
+    description: Each training run shall generate a unique and immutable run identifier.
     verification: Unit Test
 
   - id: MIT-TR-03
     category: Traceability
-    title: Each training run shall persist dataset identity, split logic, and configuration.
+    description: Each training run shall persist dataset identity, split logic, and configuration.
     verification: Unit Test
 
   - id: MIT-TR-04
     category: Traceability
-    title: Training and validation datasets shall be disjoint.
+    description: Training and validation datasets shall be disjoint.
     verification: Unit Test
 
   - id: MIT-TR-05
     category: Metrics
-    title: Training process shall record per-epoch training and validation metrics.
+    description: Training process shall record per-epoch training and validation metrics.
     verification: Unit Test
 
   - id: MIT-TR-06
     category: Numerical Stability
-    title: Training process shall detect and fail on numerical instability.
+    description: Training process shall detect and fail on numerical instability.
     verification: Unit Test
 
   - id: MIT-TR-07
     category: Traceability
-    title: All training runs shall generate a machine-readable metrics file.
+    description: All training runs shall generate a machine-readable metrics file.
     verification: Unit Test
 
   - id: MIT-TR-08
     category: Traceability
-    title: All training runs shall generate a machine-readable evidence report.
+    description: All training runs shall generate a machine-readable evidence report.
     verification: Unit Test
 
 
@@ -166,27 +166,27 @@ requirements:
 
   - id: MIT-SYS-01
     category: Governance
-    title: Training runs shall record non-clinical evidence of execution.
+    description: Training runs shall record non-clinical evidence of execution.
     verification: Unit Test
 
   - id: MIT-SYS-02
     category: Governance
-    title: Toolkit shall clearly distinguish research outputs from clinical performance claims.
+    description: Toolkit shall clearly distinguish research outputs from clinical performance claims.
     verification: Code Review
 
   - id: MIT-SYS-03
     category: Governance
-    title: All configuration inputs shall be persisted as version-controlled artifacts.
+    description: All configuration inputs shall be persisted as version-controlled artifacts.
     verification: Unit Test
 
   - id: MIT-SYS-04
     category: Governance
-    title: Toolkit shall support generation of traceability matrices linking requirements to tests.
+    description: Toolkit shall support generation of traceability matrices linking requirements to tests.
     verification: Integration Test
 
   - id: MIT-SYS-05
     category: Governance
-    title: Toolkit shall maintain compatibility with FDA SaMD design control documentation practices.
+    description: Toolkit shall maintain compatibility with FDA SaMD design control documentation practices.
     verification: Documentation Review
 
 
@@ -196,15 +196,15 @@ requirements:
 
   - id: MIT-VAL-01
     category: Evaluation
-    title: Toolkit shall support structured evaluation of trained models on held-out datasets.
+    description: Toolkit shall support structured evaluation of trained models on held-out datasets.
     verification: Integration Test
 
   - id: MIT-VAL-02
     category: Evaluation
-    title: Evaluation outputs shall persist performance metrics in machine-readable form.
+    description: Evaluation outputs shall persist performance metrics in machine-readable form.
     verification: Integration Test
 
   - id: MIT-VAL-03
     category: Evaluation
-    title: Evaluation shall be reproducible given identical model and dataset inputs.
+    description: Evaluation shall be reproducible given identical model and dataset inputs.
     verification: Integration Test

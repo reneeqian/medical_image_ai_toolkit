@@ -1,10 +1,3 @@
-"""
-Primary requirement: MIT-DR-09
-Secondary requirements implicitly covered:
-MIT-DR-01 through MIT-DR-08
-"""
-
-
 import numpy as np
 import pytest
 
@@ -15,7 +8,7 @@ from regulatory_tools.evidence.evidence_report import EvidenceReport
 @pytest.mark.requirement("MIT-DR-01")
 @pytest.mark.requirement("MIT-DR-02")
 @pytest.mark.requirement("MIT-VRF-01")
-def test_MIT_DR_09_enforce_patient_sample_contract_boundary():
+def test_MIT_DR_09_enforce_patient_sample_contract_boundary(evidence_output_dir):
     report = EvidenceReport(subject="PatientSample Contract (Dummy)")
 
     sample = PatientSample(
@@ -31,6 +24,6 @@ def test_MIT_DR_09_enforce_patient_sample_contract_boundary():
     )
 
     report.issues.extend(contract_report.issues)
-    report.auto_save("patient_sample_contract_dummy")
+    report.auto_save("patient_sample_contract_dummy", evidence_output_dir)
 
     assert not report.has_errors, report.summary()
