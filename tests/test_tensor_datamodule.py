@@ -2,7 +2,7 @@ import pytest
 import torch
 from pathlib import Path
 
-from medical_image_ai_toolkit.datamodules.tensor_datamodule import TensorDatamodule
+from medical_image_ai_toolkit.datasources.tensor_datamodule import TensorDatamodule
 from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 @pytest.mark.requirement("MIT-FR-01")
