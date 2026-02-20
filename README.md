@@ -47,3 +47,5 @@ medical_image_ai_toolkit/
 
 This toolkit demonstrates engineering patterns aligned with
 regulated AI system development. It is not a cleared device.
+
+Requirements follow the convention defined in regulatory_tools/docs/Requirements_Convention.md
