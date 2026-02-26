@@ -24,9 +24,8 @@ def _hash_metrics_file(metrics_path: Path) -> str:
 # Tests
 # -------------------------------
 
-@pytest.mark.requirement("MIT-TR-05")
-@pytest.mark.requirement("MIT-TR-08")
-def test_MIT_TR_05_training_records_metrics_and_evidence(
+@pytest.mark.requirement("VER-002")
+def test_training_records_metrics_and_evidence(
     tmp_path,
     evidence_output_dir,
 ):
@@ -56,25 +55,25 @@ def test_MIT_TR_05_training_records_metrics_and_evidence(
     if not metrics_file.exists():
         report.error(
             message="Metrics file not written",
-            requirement_id="MIT-TR-05",
+            requirement_id="VER-002",
         )
 
     if not evidence_file.exists():
         report.error(
             message="Evidence report not written",
-            requirement_id="MIT-TR-08",
+            requirement_id="VER-003",
         )
 
     report.auto_save(
-        "MIT_TR_05_training_records_metrics_and_evidence",
+        "VER_002_training_records_metrics_and_evidence",
         evidence_output_dir,
     )
 
     assert not report.has_errors, report.summary()
 
 
-@pytest.mark.requirement("MIT-TR-09")
-def test_MIT_TR_09_training_detects_nan_loss(
+@pytest.mark.requirement("TRN-003")
+def test_training_detects_nan_loss(
     tmp_path,
     evidence_output_dir,
 ):
@@ -101,19 +100,19 @@ def test_MIT_TR_09_training_detects_nan_loss(
 
     report.info(
         message="Trainer failed as expected on NaN loss",
-        requirement_id="MIT-TR-09",
+        requirement_id="TRN-003",
     )
 
     report.auto_save(
-        "MIT_TR_09_training_detects_nan_loss",
+        "TRN_003_training_detects_nan_loss",
         evidence_output_dir,
     )
 
     assert not report.has_errors, report.summary()
 
 
-@pytest.mark.requirement("MIT-DR-09")
-def test_MIT_DR_09_trainer_rejects_unvalidated_input(
+@pytest.mark.requirement("DAT-001")
+def test_trainer_rejects_unvalidated_input(
     tmp_path,
     evidence_output_dir,
 ):
@@ -146,19 +145,19 @@ def test_MIT_DR_09_trainer_rejects_unvalidated_input(
 
     report.info(
         message="Trainer rejected invalid input batch",
-        requirement_id="MIT-DR-09",
+        requirement_id="DAT-001",
     )
 
     report.auto_save(
-        "MIT_DR_09_trainer_rejects_unvalidated_input",
+        "DAT_001_trainer_rejects_unvalidated_input",
         evidence_output_dir,
     )
 
     assert not report.has_errors, report.summary()
 
 
-@pytest.mark.requirement("MIT-TR-01")
-def test_MIT_TR_01_training_is_deterministic(
+@pytest.mark.requirement("VER-001")
+def test_training_is_deterministic(
     tmp_path,
     evidence_output_dir,
 ):
@@ -193,11 +192,11 @@ def test_MIT_TR_01_training_is_deterministic(
     if hash1 != hash2:
         report.error(
             message="Training metrics are not deterministic across runs",
-            requirement_id="MIT-TR-01",
+            requirement_id="VER-001",
         )
 
     report.auto_save(
-        "MIT_TR_01_training_is_deterministic",
+        "VER_001_training_is_deterministic",
         evidence_output_dir,
     )
 

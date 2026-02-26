@@ -34,8 +34,8 @@ def make_invalid_sample():
         annotations=None,
     )
 
-@pytest.mark.requirement("MIT-DR-03")
-def test_MIT_DR_03_patient_sample_converted_to_3d_tensor(sample,evidence_output_dir):
+@pytest.mark.requirement("DAT-004")
+def test_patient_sample_converted_to_3d_tensor(sample,evidence_output_dir):
     report = EvidenceReport(
         subject="PatientSample to tensor dimensionality and interface validation"
     )
@@ -46,39 +46,36 @@ def test_MIT_DR_03_patient_sample_converted_to_3d_tensor(sample,evidence_output_
     image = out["image"]
     target = out["target"]
 
-    # MIT-DR-02
     assert image.ndim == 4
     assert image.shape[0] == 1
 
     report.info(
         message="PatientSample image_volume converted to 3D tensor with channel dimension",
-        requirement_id="MIT-DR-03",
+        requirement_id="DAT-004",
         context=f"shape={tuple(image.shape)}",
     )
 
-    # MIT-DR-01
     assert image.dtype == torch.float32
     assert torch.all(image >= 0)
     assert torch.all(image <= 1)
 
     report.info(
         message="image_volume represented as normalized float32 tensor",
-        requirement_id="MIT-DR-03",
+        requirement_id="DAT-004",
     )
 
-    # MIT-FR-01
     assert target is not None
 
     report.info(
         message="Adapter preserves PatientSample interface semantics",
-        requirement_id="MIT-FR-03",
+        requirement_id="DAT-004",
     )
 
-    report.auto_save("MIT_DR_03_patient_sample_converted_to_3d_tensor",evidence_output_dir)
+    report.auto_save("DAT_004_patient_sample_converted_to_3d_tensor",evidence_output_dir)
     assert not report.has_errors, report.summary()
 
-@pytest.mark.requirement("MIT-DR-01")
-def test_MIT_DR_01_invalid_patient_sample_rejected(evidence_output_dir):
+@pytest.mark.requirement("DAT-001")
+def test_invalid_patient_sample_rejected(evidence_output_dir):
     report = EvidenceReport(
         subject="Invalid PatientSample rejection"
     )
@@ -91,8 +88,8 @@ def test_MIT_DR_01_invalid_patient_sample_rejected(evidence_output_dir):
 
     report.info(
         message="Adapter rejects PatientSample with invalid image_volume",
-        requirement_id="MIT-DR-01",
+        requirement_id="DAT-001",
     )
 
-    report.auto_save("MIT_DR_01_invalid_patient_sample_rejected",evidence_output_dir)
+    report.auto_save("DAT_001_invalid_patient_sample_rejected",evidence_output_dir)
     assert not report.has_errors, report.summary()
