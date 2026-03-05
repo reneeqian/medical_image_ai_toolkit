@@ -2,6 +2,8 @@ import subprocess
 from pathlib import Path
 import sys
 import os
+import ast
+
 
 from regulatory_tools.traceability.generator import (
     build_trace_matrix,
@@ -58,6 +60,40 @@ def run_pytest_with_coverage():
 
     print(f"\n[Coverage] Reports saved to: {coverage_dir}\n")
 
+def collect_requirement_markers(test_root: Path):
+    """
+    Scan pytest files and collect requirement markers.
+
+    Returns:
+        dict[str, list[str]]
+        { requirement_id: [test_node_ids...] }
+    """
+
+    requirement_map = {}
+
+    for test_file in test_root.rglob("test_*.py"):
+        module = ast.parse(test_file.read_text())
+
+        for node in module.body:
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+
+            test_name = node.name
+
+            for decorator in node.decorator_list:
+                if isinstance(decorator, ast.Call):
+                    if (
+                        isinstance(decorator.func, ast.Attribute)
+                        and decorator.func.attr == "requirement"
+                    ):
+
+                        for arg in decorator.args:
+                            req_id = arg.value
+                            node_id = f"{test_file.relative_to(PROJECT_ROOT)}::{test_name}"
+                            requirement_map.setdefault(req_id, []).append(node_id)
+
+    return requirement_map
+
 
 def generate_traceability_matrix():
     print("\n[Runner] Generating traceability matrix...\n")
@@ -69,7 +105,7 @@ def generate_traceability_matrix():
     )
 
     unmarked_tests = find_unmarked_tests(TEST_DIR)
-
+    marker_links = collect_requirement_markers(TEST_DIR)
 
     if missing:
         print("[Traceability] Requirements declared but not tested:")
@@ -86,13 +122,45 @@ def generate_traceability_matrix():
         for t in unmarked_tests:
             print(f"  - {t}")
 
-
-
     matrix = build_trace_matrix(
         requirements_yaml=REQUIREMENTS_YAML,
         evidence_root=EVIDENCE_ROOT,
     )
+    
+    # ------------------------------------------------------------------
+    # Merge pytest requirement markers into the matrix
+    # ------------------------------------------------------------------
 
+    for row in matrix:
+        req_id = row["requirement_id"]
+
+        # Convert existing tests string -> set
+        existing_tests = set(
+            t.strip() for t in row.get("tests", "").split(",") if t.strip()
+        )
+
+        marker_tests = set(marker_links.get(req_id, []))
+        merged = sorted(existing_tests.union(marker_tests))
+        row["tests"] = ", ".join(merged)
+    
+    # ------------------------------------------------------------------
+    # Update status based on linked tests
+    # ------------------------------------------------------------------
+
+    for entry in matrix:
+        tests = entry.get("tests", "")
+        evidence = entry.get("evidence_files", "")
+
+        has_tests = bool(tests.strip())
+        has_evidence = bool(evidence.strip())
+
+        if has_evidence:
+            entry["status"] = "PASS"
+        elif has_tests:
+            entry["status"] = "LINKED"
+        else:
+            entry["status"] = "UNTESTED"
+        
     OUTPUT_MATRIX.parent.mkdir(exist_ok=True)
     write_markdown(matrix, OUTPUT_MATRIX)
 
