@@ -9,12 +9,13 @@ from regulatory_tools.traceability.generator import (
 )
 from regulatory_tools.traceability.validate_traceability import (
     validate_traceability,
+    find_unmarked_tests,
 )
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 TEST_DIR = PROJECT_ROOT / "tests"
-REQUIREMENTS_YAML = PROJECT_ROOT / "docs" / "requirements.yaml"
+REQUIREMENTS_YAML = PROJECT_ROOT / "docs" /"requirements.yaml"
 EVIDENCE_ROOT = PROJECT_ROOT / "artifacts" / "evidence_runs"
 OUTPUT_MATRIX = PROJECT_ROOT / "docs" / "traceability_matrix.md"
 
@@ -30,6 +31,32 @@ def run_pytest():
     if result.returncode != 0:
         print("\n[Runner] Pytest failed. Aborting traceability generation.")
         sys.exit(1)
+        
+def run_pytest_with_coverage():
+    print("\n[Runner] Running pytest with coverage...\n")
+
+    coverage_dir = PROJECT_ROOT / "artifacts" / "coverage"
+    coverage_dir.mkdir(parents=True, exist_ok=True)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            str(TEST_DIR),
+            "--cov=Coronary_prj",
+            "--cov-report=term",
+            f"--cov-report=html:{coverage_dir / 'html'}",
+            f"--cov-report=xml:{coverage_dir / 'coverage.xml'}",
+            "--cov-fail-under=85",
+
+        ],
+        cwd=PROJECT_ROOT,
+    )
+
+    if result.returncode != 0:
+        print("\n[Runner] Pytest failed. Aborting traceability generation.")
+        sys.exit(1)
+
+    print(f"\n[Coverage] Reports saved to: {coverage_dir}\n")
 
 
 def generate_traceability_matrix():
@@ -41,6 +68,9 @@ def generate_traceability_matrix():
         test_dir=TEST_DIR,
     )
 
+    unmarked_tests = find_unmarked_tests(TEST_DIR)
+
+
     if missing:
         print("[Traceability] Requirements declared but not tested:")
         for r in sorted(missing):
@@ -50,6 +80,12 @@ def generate_traceability_matrix():
         print("[Traceability] Tests reference undeclared requirements:")
         for r in sorted(untracked):
             print(f"  - {r}")
+            
+    if unmarked_tests:
+        print("[Traceability] Tests without requirement markers:")
+        for t in unmarked_tests:
+            print(f"  - {t}")
+
 
 
     matrix = build_trace_matrix(
@@ -78,5 +114,5 @@ def generate_traceability_matrix():
 
 
 if __name__ == "__main__":
-    run_pytest()
+    run_pytest_with_coverage()
     generate_traceability_matrix()

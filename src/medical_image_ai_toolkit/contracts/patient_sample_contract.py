@@ -1,14 +1,3 @@
-# Data Requirements (MIT)
-# MIT-DR-01 image_volume shall be a NumPy array and 3D
-# MIT-DR-02 image_volume spatial dimensions shall be > 0
-# MIT-DR-03 spacing shall be (z,y,x) with all values > 0
-# MIT-DR-04 patient_id shall be defined and non-empty
-# MIT-DR-05 annotations shall be present if required by workflow
-# MIT-DR-06 annotation slice indices shall be valid and within bounds
-# MIT-DR-07 vector ROI contours shall be (N,2) and within image bounds
-# MIT-DR-08 annotation representation shall be supported (vector or dense)
-# MIT-DR-09 all PatientSample contracts shall be enforced at a single boundary
-
 import numpy as np
 
 from regulatory_tools.evidence.evidence_report import EvidenceReport
