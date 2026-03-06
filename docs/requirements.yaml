@@ -9,47 +9,61 @@ metadata:
 requirements:
 
   # ==============================
-# Data Requirements
-# ==============================
+  # Data Requirements
+  # ==============================
 
-- id: DAT-001
-  title: Patient Sample Structure Validation
-  description: >
-    PatientSample objects shall be structurally validated against
-    dimensional, spacing, and identifier constraints via an
-    enforceable contract.
+  - id: DAT-001
+    title: Patient Sample Structure Validation
+    description: >
+      PatientSample objects shall be structurally validated against
+      dimensional, spacing, and identifier constraints via an
+      enforceable contract.
 
-- id: DAT-002
-  title: Annotation Structure Compliance
-  description: >
-    Annotation objects shall expose either:
-      (a) a dense mask array, or
-      (b) a vector_rois dictionary mapping slice indices to lists of
-          VectorROI objects containing (N,2) pixel contours.
+  - id: DAT-002
+    title: Annotation Structure Compliance
+    description: >
+      Annotation objects shall expose either:
+        (a) a dense mask array, or
+        (b) a vector_rois dictionary mapping slice indices to lists of
+            VectorROI objects containing (N,2) pixel contours.
 
-- id: DAT-003
-  title: Annotation Boundary Validation
-  description: >
-    VectorROI contour coordinates and slice indices shall be validated
-    against the associated patient volume bounds via contract enforcement.
+  - id: DAT-003
+    title: Annotation Boundary Validation
+    description: >
+      VectorROI contour coordinates and slice indices shall be validated
+      against the associated patient volume bounds via contract enforcement.
 
-- id: DAT-004
-  title: Patient Sample Boundary Validation
-  description: >
-    Patient sample accessors shall prevent out-of-bounds indexing and
-    raise defined exceptions when invalid indices are requested.
+  - id: DAT-004
+    title: Patient Sample Boundary Validation
+    description: >
+      Patient sample accessors shall prevent out-of-bounds indexing and
+      raise defined exceptions when invalid indices are requested.
 
-- id: DAT-005
-  title: Patient Sample To Tensor Conversion
-  description: >
-    PatientSample objects shall support deterministic conversion to
-    2D and 3D tensors while preserving spatial metadata.
+  - id: DAT-005
+    title: Patient Sample To Tensor Conversion
+    description: >
+      PatientSample objects shall support deterministic conversion to
+      2D and 3D tensors while preserving spatial metadata.
 
-- id: DAT-006
-  title: Patient Indexing without Loading
-  description: >
-    Dataset implementations shall support enumeration of patient
-    identifiers without loading full image volumes into memory.
+  - id: DAT-006
+    title: Patient Indexing without Loading
+    description: >
+      Dataset implementations shall support enumeration of patient
+      identifiers without loading full image volumes into memory.
+
+  - id: DAT-007
+    title: Dataset Partition Generation
+    description: >
+      The system shall support generation of training, validation,
+      and test dataset partitions from a dataset according to a
+      specified partition strategy.
+
+  - id: DAT-008
+    title: Deterministic Dataset Partitioning
+    description: >
+      Dataset partitions generated using identical input datasets,
+      configuration parameters, and random seeds shall produce
+      identical partition assignments.
 
   # ==============================
   # System-Level Requirements
@@ -60,6 +74,18 @@ requirements:
     description: >
       All dataset implementations shall expose a consistent callable 
       interface supporting indexed sample retrieval.
+
+  - id: SYS-002
+    title: Training Pipeline Orchestration
+    description: >
+      The system shall support orchestration of dataset preparation,
+      model training, and model evaluation as part of a training run.
+
+  - id: SYS-003
+    title: Configurable Training Execution
+    description: >
+      Training pipeline behavior shall be configurable through
+      externally supplied configuration parameters.
     
   # ==============================
   # Training Requirements
@@ -83,6 +109,26 @@ requirements:
       Training workflows shall detect NaN loss values during optimization and 
       terminate execution with a defined exception.
 
+  - id: TRN-004
+    title: Training Run Artifact Generation
+    description: >
+      Each training run shall generate structured artifacts
+      describing the configuration parameters, dataset partitions,
+      random seeds, and resulting model artifacts.
+
+  - id: TRN-005
+    title: Training Checkpoint Support
+    description: >
+      The system shall support persistence of intermediate
+      model states during training execution.
+
+  - id: TRN-006
+    title: Deterministic Training Initialization
+    description: >
+      Model initialization during training shall be reproducible
+      when executed with identical configuration parameters
+      and random seeds.
+      
   # ==============================
   # Model Requirements
   # ==============================
@@ -98,10 +144,22 @@ requirements:
     description: >
       Persisted training artifacts shall not be modified after initial write and 
       shall be uniquely versioned per training run.
+  
+  - id: MOD-003
+    title: Model Artifact Persistence
+    description: >
+      The system shall support persistence of trained model
+      artifacts in a format suitable for later loading.
 
-# ==============================
-# Verification and Documentation Requirements
-# ==============================
+  - id: MOD-004
+    title: Model Artifact Loading
+    description: >
+      The system shall support loading previously persisted
+      model artifacts for evaluation or further training.
+
+  # ==============================
+  # Verification and Documentation Requirements
+  # ==============================
 
   - id: VER-001
     title: Deterministic Training Behavior
@@ -119,6 +177,18 @@ requirements:
     title: Dataset Separation Enforcement
     description: >
       Training and validation datasets shall contain no overlapping sample identifiers.
+  
+  - id: VER-004
+    title: Model Evaluation Execution
+    description: >
+      The system shall support execution of model evaluation
+      workflows using a specified dataset partition.
+
+  - id: VER-005
+    title: Evaluation Metric Recording
+    description: >
+      Model evaluation workflows shall record structured
+      evaluation metrics associated with the evaluated model artifact.
 
 # ==============================
 # Documentation Requirements
@@ -135,3 +205,10 @@ requirements:
     description: >
       The project shall include a README file describing
       system purpose, configuration, and execution steps.
+  
+  - id: DOC-003
+    title: Training Workflow Documentation
+    description: >
+      Project documentation shall describe the expected workflow
+      for dataset preparation, model training, and evaluation
+      using the toolkit.
