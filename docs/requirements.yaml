@@ -86,6 +86,14 @@ requirements:
     description: >
       Training pipeline behavior shall be configurable through
       externally supplied configuration parameters.
+  
+  - id: SYS-004
+    title: Training Result Aggregation
+    description: >
+      The system shall return a structured results object
+      containing references to training artifacts,
+      evaluation metrics, and model artifacts generated
+      during a training run.
     
   # ==============================
   # Training Requirements
@@ -156,6 +164,18 @@ requirements:
     description: >
       The system shall support loading previously persisted
       model artifacts for evaluation or further training.
+  
+  - id: MOD-005
+    title: Model Export Support
+    description: >
+      The system shall support export of trained model artifacts
+      in a format suitable for inference or deployment.
+
+  - id: MOD-006
+    title: Inference Execution Support
+    description: >
+      The system shall support execution of model inference
+      on new input data using a persisted model artifact.
 
   # ==============================
   # Verification and Documentation Requirements
@@ -189,6 +209,18 @@ requirements:
     description: >
       Model evaluation workflows shall record structured
       evaluation metrics associated with the evaluated model artifact.
+  
+  - id: VER-006
+    title: Post-Training Validation Support
+    description: >
+      The system shall support execution of validation
+      workflows on trained models using held-out datasets.
+
+  - id: VER-007
+    title: Inference Consistency Verification
+    description: >
+      Repeated inference executions using identical model
+      artifacts and input data shall produce identical outputs.
 
 # ==============================
 # Documentation Requirements
@@ -212,3 +244,10 @@ requirements:
       Project documentation shall describe the expected workflow
       for dataset preparation, model training, and evaluation
       using the toolkit.
+
+  - id: DOC-004
+    title: Training Report Generation
+    description: >
+      The system shall support generation of a structured
+      training report summarizing training configuration,
+      dataset partitions, model artifacts, and evaluation metrics.

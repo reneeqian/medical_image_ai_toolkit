@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from tests.conftest import TensorDataset
 
 
-from medical_image_ai_toolkit.training.medical_image_trainer import MedicalImageTrainer
+from medical_image_ai_toolkit.training.trainer import MedicalImageTrainer
 from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 

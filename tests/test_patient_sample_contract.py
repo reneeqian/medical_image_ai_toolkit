@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
-from medical_image_ai_toolkit.contracts.patient_sample_contract import enforce_patient_sample_contract
+from medical_image_ai_toolkit.data.patient_sample import PatientSample
+from medical_image_ai_toolkit.dataobjects.patient_sample_contract import enforce_patient_sample_contract
 from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 @pytest.mark.requirement("DAT-003")
