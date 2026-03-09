@@ -39,6 +39,13 @@ class MedicalImageDataSource:
     
     def get_patient(self, patient_id: str):
         return self.ingestor.get_patient(patient_id)
+
+    def get_sample(self, patient_id: str):
+        if hasattr(self.ingestor, "get_sample"):
+            return self.ingestor.get_sample(patient_id)
+
+        # fallback behavior: return patient object
+        return self.get_patient(patient_id)
     
     def load_slice(self, patient_id: str, slice_index: int):
         sample = self.get_patient(patient_id)

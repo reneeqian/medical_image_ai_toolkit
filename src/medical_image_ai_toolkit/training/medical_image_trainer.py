@@ -18,7 +18,6 @@ from torch.utils.data import DataLoader
 from regulatory_tools.evidence.evidence_report import EvidenceReport
 from medical_image_ai_toolkit.results.medical_image_training_results import MedicalImageTrainingResults
 
-
 class MedicalImageTrainer:
     """
     Bare-bones training orchestration class.
@@ -35,37 +34,61 @@ class MedicalImageTrainer:
     # ---------------------------------------------------------
 
     def train(self):
-        
+        if not self.datasource.has_partitions():
+            raise RuntimeError("Datasource partitions not created")
+
+        train_ids = self.datasource.get_train_ids()
+
+        device = self.config.device
+
+        self.model.to(device)
+
+        optimizer = torch.optim.Adam(
+            self.model.parameters(),
+            lr=self.config.learning_rate
+        )
+
         results = MedicalImageTrainingResults(
             self.model,
             self.config,
             self.datasource
         )
 
-        print("Starting training...")
-
-        if not self.datasource.has_partitions():
-            raise RuntimeError(
-                "Datasource partitions not found. "
-                "Call datasource.create_partitions() first."
-            )
-
-        train_ids = self.datasource.get_train_ids()
-        val_ids = self.datasource.get_val_ids()
-
-        print("Starting training...")
-        print(f"Train patients: {len(train_ids)}")
-        print(f"Val patients: {len(val_ids)}")
+        print("Starting training")
 
         for epoch in range(self.config.epochs):
 
-            print(f"\nEpoch {epoch+1}/{self.config.epochs}")
+            print(f"\nEpoch {epoch+1}")
 
-            self._train_epoch(train_ids)
+            for patient_id in train_ids:
 
-            self._validate_epoch(val_ids)
+                sample = self.datasource.get_sample(patient_id)
 
-        print("Training complete.")
+                # convert to tensor
+                x = torch.tensor(sample, dtype=torch.float32)
+
+                if x.ndim == 2:
+                    x = x.unsqueeze(0).unsqueeze(0)  # [1,1,H,W]
+
+                elif x.ndim == 3:
+                    x = x.unsqueeze(0)  # [1,C,H,W]
+
+                x = x.to(device)
+
+                # dummy target for smoke test
+                y = torch.zeros((1,1), dtype=torch.float32).to(device)
+
+                pred = self.model(x)
+
+                loss = ((pred - y) ** 2).mean()
+
+                optimizer.zero_grad()
+
+                loss.backward()
+
+                optimizer.step()
+
+            print("epoch complete")
 
         results.mark_training_complete()
 
