@@ -44,7 +44,7 @@ def run_pytest_with_coverage():
         [
             "pytest",
             str(TEST_DIR),
-            "--cov=Coronary_prj",
+            "--cov=medical_image_ai_toolkit",
             "--cov-report=term",
             f"--cov-report=html:{coverage_dir / 'html'}",
             f"--cov-report=xml:{coverage_dir / 'coverage.xml'}",
