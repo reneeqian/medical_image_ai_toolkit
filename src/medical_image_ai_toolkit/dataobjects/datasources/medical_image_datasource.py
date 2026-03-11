@@ -67,9 +67,7 @@ class MedicalImageDataSource:
         self.test_ids = test_ids
 
         return train_ids, val_ids, test_ids
-    
-    def has_partitions(self):
-        return self.train_ids is not None
+
     
     def partition_summary(self):
         print("\nDataset Summary")

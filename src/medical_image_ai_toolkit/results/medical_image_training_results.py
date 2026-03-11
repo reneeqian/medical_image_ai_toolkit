@@ -20,6 +20,10 @@ class MedicalImageTrainingResults:
         self.metrics = {}
         self.artifacts = {}
         
+        # initialize lifecycle state
+        self.training_start_time = None
+        self.training_end_time = None
+        
     # --------------------------------------------------
     # Training lifecycle
     # --------------------------------------------------
@@ -40,10 +44,9 @@ class MedicalImageTrainingResults:
 
         print(f"Model: {self.model.__class__.__name__}")
 
-        if self.training_end_time:
+        if self.training_end_time is not None and self.training_start_time is not None:
 
             duration = self.training_end_time - self.training_start_time
-
             print(f"Training time: {duration}")
 
         else:

@@ -295,3 +295,183 @@ def test_roi_contour_shape_validation(evidence_output_dir):
     report.auto_save("DAT003_invalid_contour_shape", evidence_output_dir)
 
     assert report.has_errors
+
+@pytest.mark.requirement("DAT-002")
+def test_annotations_required_missing(evidence_output_dir):
+
+    report = EvidenceReport(subject="DAT-002 Required Annotations Missing")
+
+    sample = PatientSample(
+        patient_id="TEST-010",
+        image_volume=make_volume(),
+        spacing=(1.0,1.0,1.0),
+        annotations=None,
+    )
+
+    contract = enforce_patient_sample_contract(
+        sample,
+        require_annotations=True,
+    )
+
+    report.issues.extend(contract.issues)
+    report.auto_save("DAT002_annotations_required_missing", evidence_output_dir)
+
+    assert report.has_errors
+
+@pytest.mark.requirement("DAT-002")
+def test_vector_rois_none(evidence_output_dir):
+
+    report = EvidenceReport(subject="DAT-002 vector_rois None")
+
+    annotations = AnnotationBundle(vector_rois=None)
+
+    sample = PatientSample(
+        patient_id="TEST-011",
+        image_volume=make_volume(),
+        spacing=(1.0,1.0,1.0),
+        annotations=annotations,
+    )
+
+    contract = enforce_patient_sample_contract(sample)
+
+    report.issues.extend(contract.issues)
+    report.auto_save("DAT002_vector_rois_none", evidence_output_dir)
+
+    assert not report.has_errors
+    
+@pytest.mark.requirement("DAT-002")
+def test_vector_rois_not_dict(evidence_output_dir):
+
+    report = EvidenceReport(subject="DAT-002 vector_rois must be dict")
+
+    annotations = AnnotationBundle(vector_rois=["not","a","dict"])
+
+    sample = PatientSample(
+        patient_id="TEST-012",
+        image_volume=make_volume(),
+        spacing=(1.0,1.0,1.0),
+        annotations=annotations,
+    )
+
+    contract = enforce_patient_sample_contract(sample)
+
+    report.issues.extend(contract.issues)
+    report.auto_save("DAT002_vector_rois_not_dict", evidence_output_dir)
+
+    assert report.has_errors
+
+@pytest.mark.requirement("DAT-003")
+def test_slice_index_not_int(evidence_output_dir):
+
+    report = EvidenceReport(subject="DAT-003 slice index type")
+
+    roi = make_valid_roi()
+
+    annotations = AnnotationBundle(
+        vector_rois={
+            "bad_index": [roi]
+        }
+    )
+
+    sample = PatientSample(
+        patient_id="TEST-013",
+        image_volume=make_volume(),
+        spacing=(1.0,1.0,1.0),
+        annotations=annotations,
+    )
+
+    contract = enforce_patient_sample_contract(sample)
+
+    report.issues.extend(contract.issues)
+    report.auto_save("DAT003_slice_index_not_int", evidence_output_dir)
+
+    assert report.has_errors
+    
+@pytest.mark.requirement("DAT-003")
+def test_rois_not_list(evidence_output_dir):
+
+    report = EvidenceReport(subject="DAT-003 rois must be list")
+
+    roi = make_valid_roi()
+
+    annotations = AnnotationBundle(
+        vector_rois={
+            2: roi
+        }
+    )
+
+    sample = PatientSample(
+        patient_id="TEST-014",
+        image_volume=make_volume(),
+        spacing=(1.0,1.0,1.0),
+        annotations=annotations,
+    )
+
+    contract = enforce_patient_sample_contract(sample)
+
+    report.issues.extend(contract.issues)
+    report.auto_save("DAT003_rois_not_list", evidence_output_dir)
+
+    assert report.has_errors
+
+@pytest.mark.requirement("DAT-003")
+def test_roi_wrong_type(evidence_output_dir):
+
+    report = EvidenceReport(subject="DAT-003 roi wrong type")
+
+    annotations = AnnotationBundle(
+        vector_rois={
+            2: ["not_roi"]
+        }
+    )
+
+    sample = PatientSample(
+        patient_id="TEST-015",
+        image_volume=make_volume(),
+        spacing=(1.0,1.0,1.0),
+        annotations=annotations,
+    )
+
+    contract = enforce_patient_sample_contract(sample)
+
+    report.issues.extend(contract.issues)
+    report.auto_save("DAT003_roi_wrong_type", evidence_output_dir)
+
+    assert report.has_errors
+
+@pytest.mark.requirement("DAT-003")
+def test_roi_y_out_of_bounds(evidence_output_dir):
+
+    report = EvidenceReport(subject="DAT-003 y bounds")
+
+    contour = np.array([
+        [10,10],
+        [20,1000],  # invalid y
+        [30,10],
+    ])
+
+    roi = VectorROI(
+        contour_px=contour,
+        slice_index=1,
+        label="lesion"
+    )
+
+    annotations = AnnotationBundle(
+        vector_rois={1:[roi]}
+    )
+
+    sample = PatientSample(
+        patient_id="TEST-016",
+        image_volume=make_volume(),
+        spacing=(1.0,1.0,1.0),
+        annotations=annotations,
+    )
+
+    contract = enforce_patient_sample_contract(sample)
+
+    report.issues.extend(contract.issues)
+    report.auto_save("DAT003_y_out_of_bounds", evidence_output_dir)
+
+    assert report.has_errors
+
+

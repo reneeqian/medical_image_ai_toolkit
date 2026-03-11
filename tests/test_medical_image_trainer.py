@@ -380,3 +380,38 @@ def test_dataset_partitions_do_not_overlap(
     )
 
     assert not report.has_errors, report.summary()
+    
+@pytest.mark.requirement("SYS-002")
+@pytest.mark.requirement("SYS-003")
+def test_trainer_sanity_check(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Trainer sanity check")
+
+    class DummyDatasource:
+
+        def has_partitions(self): return False
+
+        def get_num_patients(self): return 0
+
+    class DummyTask:
+        pass
+
+    model = torch.nn.Linear(4,2)
+
+    config = TrainingConfig()
+
+    trainer = MedicalImageTrainer(
+        DummyDatasource(),
+        model,
+        DummyTask(),
+        config
+    )
+
+    trainer.sanity_check()
+
+    report.auto_save(
+        "SYS002_SYS003_trainer_sanity_check",
+        evidence_output_dir
+    )
+
+    assert not report.has_errors, report.summary()
