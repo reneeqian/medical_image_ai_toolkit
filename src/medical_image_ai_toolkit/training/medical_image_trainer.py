@@ -23,11 +23,23 @@ class MedicalImageTrainer:
     Bare-bones training orchestration class.
     """
 
-    def __init__(self, datasource, model, config):
-
+    def __init__(
+        self,
+        datasource,
+        model,
+        training_config,
+        output_dir=None,
+        random_seed=None
+    ):
         self.datasource = datasource
         self.model = model
-        self.config = config
+        self.config = training_config
+
+        self.output_dir = Path(output_dir or "artifacts/training_runs")
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        if random_seed is not None:
+            self._set_seed(random_seed)
     
     # ---------------------------------------------------------
     # Public API
@@ -169,8 +181,15 @@ class MedicalImageTrainer:
     # Internal methods
     # ---------------------------------------------------------
 
-    def _train_epoch(self, train_ids):
+    def _set_seed(self, seed):
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        random.seed(seed)
 
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+    def _train_epoch(self, train_ids):
         for patient_id in train_ids:
 
             sample = self.datasource.get_patient(patient_id)
@@ -182,7 +201,6 @@ class MedicalImageTrainer:
             pass
 
     def _validate_epoch(self, val_ids):
-
         for patient_id in val_ids:
 
             sample = self.datasource.get_patient(patient_id)
@@ -191,5 +209,3 @@ class MedicalImageTrainer:
 
             # placeholder validation
             pass
-
-    

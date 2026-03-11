@@ -6,22 +6,94 @@ from medical_image_ai_toolkit.dataobjects.patient_sample_contract import enforce
 from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 @pytest.mark.requirement("DAT-003")
-def test_enforce_patient_sample_contract_boundary(evidence_output_dir):
-    report = EvidenceReport(subject="PatientSample Contract (Dummy)")
+def test_patient_sample_contract_accepts_valid_annotations(evidence_output_dir):
+
+    report = EvidenceReport(
+        subject="DAT-003 Valid VectorROI Boundary Validation"
+    )
+
+    volume = np.zeros((16, 64, 64), dtype=np.float32)
+
+    annotations = {
+        "vector_rois": {
+            5: [
+                np.array([[10,10],[20,10],[20,20],[10,20]])
+            ]
+        }
+    }
 
     sample = PatientSample(
-        patient_id="DUMMY-001",
-        image_volume=np.zeros((16, 64, 64), dtype=np.float32),
-        spacing=(1.0, 1.0, 1.0),
-        annotations=None,
+        patient_id="TEST-001",
+        image_volume=volume,
+        spacing=(1,1,1),
+        annotations=annotations
     )
 
-    contract_report = enforce_patient_sample_contract(
-        sample,
-        require_annotations=False,
+    contract = enforce_patient_sample_contract(sample)
+
+    report.issues.extend(contract.issues)
+    report.auto_save("DAT003_valid_annotation", evidence_output_dir)
+
+    assert not report.has_errors
+    
+@pytest.mark.requirement("DAT-003")
+def test_patient_sample_contract_rejects_invalid_slice(evidence_output_dir):
+
+    report = EvidenceReport(
+        subject="DAT-003 Slice Boundary Validation"
     )
 
-    report.issues.extend(contract_report.issues)
-    report.auto_save("DAT_003patient_sample_contract_dummy", evidence_output_dir)
+    volume = np.zeros((16,64,64), dtype=np.float32)
 
-    assert not report.has_errors, report.summary()
+    annotations = {
+        "vector_rois": {
+            30: [  # invalid slice
+                np.array([[10,10],[20,10],[20,20],[10,20]])
+            ]
+        }
+    }
+
+    sample = PatientSample(
+        patient_id="TEST-002",
+        image_volume=volume,
+        spacing=(1,1,1),
+        annotations=annotations
+    )
+
+    contract = enforce_patient_sample_contract(sample)
+
+    report.issues.extend(contract.issues)
+    report.auto_save("DAT003_invalid_slice", evidence_output_dir)
+
+    assert report.has_errors
+    
+@pytest.mark.requirement("DAT-003")
+def test_patient_sample_contract_rejects_invalid_coordinates(evidence_output_dir):
+
+    report = EvidenceReport(
+        subject="DAT-003 Coordinate Boundary Validation"
+    )
+
+    volume = np.zeros((16,64,64), dtype=np.float32)
+
+    annotations = {
+        "vector_rois": {
+            5: [
+                np.array([[10,10],[500,10],[20,20]])  # invalid x
+            ]
+        }
+    }
+
+    sample = PatientSample(
+        patient_id="TEST-003",
+        image_volume=volume,
+        spacing=(1,1,1),
+        annotations=annotations
+    )
+
+    contract = enforce_patient_sample_contract(sample)
+
+    report.issues.extend(contract.issues)
+    report.auto_save("DAT003_invalid_coordinates", evidence_output_dir)
+
+    assert report.has_errors
