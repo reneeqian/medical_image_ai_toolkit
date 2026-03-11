@@ -158,3 +158,85 @@ def test_datasource_behaviors(tmp_path, evidence_output_dir):
     )
 
     assert not report.has_errors, report.summary()
+
+# =========================================================
+# Test get_num_patients and get_patient / get_sample
+# =========================================================
+
+@pytest.mark.requirement("DAT-006")
+def test_get_num_patients_and_get_patient(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Datasource get_num_patients / get_patient")
+
+    ds = MedicalImageDataSource(tmp_path, DummyIngestor())
+
+    # get_num_patients
+    num = ds.get_num_patients()
+    if num != 10:
+        report.error("get_num_patients returned incorrect count", "DAT-006")
+
+    # get_patient
+    patient = ds.get_patient("P0")
+    if patient.image_volume.shape != (5, 10, 10):
+        report.error("get_patient returned incorrect object", "DAT-006")
+
+    # get_sample fallback
+    sample = ds.get_sample("P1")
+    if sample.image_volume.shape != (5, 10, 10):
+        report.error("get_sample returned incorrect object", "DAT-006")
+
+    report.auto_save("DAT006_get_patient_get_sample", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+# =========================================================
+# Test has_partitions before and after creation
+# =========================================================
+
+@pytest.mark.requirement("DAT-007")
+def test_has_partitions_flag(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Datasource has_partitions flag")
+
+    ds = MedicalImageDataSource(tmp_path, DummyIngestor())
+
+    # before partitioning
+    if ds.has_partitions():
+        report.error("has_partitions True before create_partitions", "DAT-007")
+
+    # after partitioning
+    ds.create_partitions(DummyPartitionStrategy())
+    if not ds.has_partitions():
+        report.error("has_partitions False after create_partitions", "DAT-007")
+
+    report.auto_save("DAT007_has_partitions_flag", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+# =========================================================
+# Test show_slice (basic coverage)
+# =========================================================
+
+@pytest.mark.requirement("DAT-004")
+def test_show_slice_basic(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Datasource show_slice validation")
+
+    ds = MedicalImageDataSource(tmp_path, DummyIngestor())
+
+    # slice_index must be valid
+    try:
+        ds.show_slice("P0", slice_index=0)
+    except Exception as e:
+        report.error(f"show_slice raised unexpected exception: {e}", "DAT-004")
+
+    # slice_index out of bounds
+    with pytest.raises(IndexError):
+        ds.show_slice("P0", slice_index=100)
+
+    # require ValueError if neither slice_index nor slice_range nor annotated_only
+    with pytest.raises(ValueError):
+        ds.show_slice("P0")
+
+    report.auto_save("DAT004_show_slice_basic", evidence_output_dir)
+    assert not report.has_errors, report.summary()
