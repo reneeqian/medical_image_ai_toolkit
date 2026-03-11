@@ -1,4 +1,4 @@
-name: Coronary CI
+name: Medical Image AI Toolkit CI
 
 on:
   push:
