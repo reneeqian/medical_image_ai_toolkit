@@ -1,19 +1,13 @@
 from __future__ import annotations
 
 import json
-import time
-import uuid
-from datetime import datetime
 import random
+from datetime import datetime
 import numpy as np
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-import hashlib
-import sys
 
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
 
 from regulatory_tools.evidence.evidence_report import EvidenceReport
 from medical_image_ai_toolkit.results.medical_image_training_results import MedicalImageTrainingResults
@@ -27,12 +21,14 @@ class MedicalImageTrainer:
         self,
         datasource,
         model,
+        task,
         training_config,
         output_dir=None,
-        random_seed=None
+        random_seed=42
     ):
         self.datasource = datasource
         self.model = model
+        self.task = task
         self.config = training_config
 
         self.output_dir = Path(output_dir or "artifacts/training_runs")
@@ -59,52 +55,83 @@ class MedicalImageTrainer:
             self.model.parameters(),
             lr=self.config.learning_rate
         )
-
+        
+        run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_dir = self.output_dir / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        
         results = MedicalImageTrainingResults(
             self.model,
             self.config,
-            self.datasource
+            self.datasource,
+            run_dir
         )
 
         print("Starting training")
+        
+        self.model.train()
 
+        epoch_losses = []
         for epoch in range(self.config.epochs):
 
             print(f"\nEpoch {epoch+1}")
-
+            running_loss = 0.0
+            n_samples = 0
+            
             for patient_id in train_ids:
 
                 sample = self.datasource.get_sample(patient_id)
+                x, y = self.task.prepare_training_sample(sample)
 
-                # convert to tensor
-                x = torch.tensor(sample, dtype=torch.float32)
+                if not torch.isfinite(x).all():
+                    raise RuntimeError("NaN detected in input")
 
-                if x.ndim == 2:
-                    x = x.unsqueeze(0).unsqueeze(0)  # [1,1,H,W]
+                x = x.to(device, non_blocking=True)
 
-                elif x.ndim == 3:
-                    x = x.unsqueeze(0)  # [1,C,H,W]
-
-                x = x.to(device)
-
-                # dummy target for smoke test
-                y = torch.zeros((1,1), dtype=torch.float32).to(device)
+                if isinstance(y, torch.Tensor):
+                    y = y.to(device, non_blocking=True)
 
                 pred = self.model(x)
 
-                loss = ((pred - y) ** 2).mean()
+                loss = self.task.compute_loss(pred, y)
 
-                optimizer.zero_grad()
+                if not torch.isfinite(loss).all():
+                    raise RuntimeError("NaN loss detected")
 
+                optimizer.zero_grad(set_to_none=True)
                 loss.backward()
-
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
                 optimizer.step()
 
+                running_loss += loss.item()
+                n_samples += 1
+
+            epoch_loss = running_loss / max(n_samples, 1)
+            epoch_losses.append(epoch_loss)
+
+            results.history.append({
+                "epoch": epoch + 1,
+                "loss": epoch_loss
+            })
+            
             print("epoch complete")
+
+        results.metrics = {
+            "final_loss": epoch_losses[-1],
+            "num_epochs": self.config.epochs,
+            "num_train_samples": len(train_ids)
+        }
+
+        metrics_path = results.run_dir / "metrics.json"
+
+        with open(metrics_path, "w") as f:
+            json.dump(results.metrics, f, indent=2)
+
+        results.artifacts["metrics"] = metrics_path
 
         results.mark_training_complete()
 
-        return results  
+        return results
     
     def sanity_check(self):
 
@@ -183,29 +210,9 @@ class MedicalImageTrainer:
 
     def _set_seed(self, seed):
         torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
         np.random.seed(seed)
         random.seed(seed)
 
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
-
-    def _train_epoch(self, train_ids):
-        for patient_id in train_ids:
-
-            sample = self.datasource.get_patient(patient_id)
-
-            volume = sample.image_volume
-
-            # placeholder
-            # model forward + loss + optimizer step
-            pass
-
-    def _validate_epoch(self, val_ids):
-        for patient_id in val_ids:
-
-            sample = self.datasource.get_patient(patient_id)
-
-            volume = sample.image_volume
-
-            # placeholder validation
-            pass
