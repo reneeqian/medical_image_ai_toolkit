@@ -82,7 +82,7 @@ requirements:
       model training, and model evaluation as part of a training run.
 
   - id: SYS-003
-    title: Configurable Training Execution
+    title: Pipeline Configuration Interface
     description: >
       Training pipeline behavior shall be configurable through
       externally supplied configuration parameters.
@@ -94,6 +94,37 @@ requirements:
       containing references to training artifacts,
       evaluation metrics, and model artifacts generated
       during a training run.
+  
+  # ==============================
+  # Task Definition Requirements
+  # ==============================
+
+  - id: TSK-001
+    title: Task Definition Object
+    description: >
+      Training workflows shall accept a TaskDefinition object that
+      specifies the model, loss function, and training configuration
+      required to execute a training run.
+
+  - id: TSK-002
+    title: Deterministic Task Configuration
+    description: >
+      A TaskDefinition object shall produce identical model and
+      training configuration when initialized with identical
+      parameters and random seeds.
+
+  - id: TSK-003
+    title: Dataset Compatibility Validation
+    description: >
+      TaskDefinition implementations shall validate that the
+      provided dataset interface exposes the data structures
+      required by the task before training execution begins.
+
+  - id: TSK-004
+    title: Task Artifact Registration
+    description: >
+      Training workflows shall record the TaskDefinition configuration
+      used for a training run as part of the generated training artifacts.
     
   # ==============================
   # Training Requirements
