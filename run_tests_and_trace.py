@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 import os
 import ast
+import xml.etree.ElementTree as ET
 
 
 from regulatory_tools.traceability.generator import (
@@ -94,6 +95,85 @@ def collect_requirement_markers(test_root: Path):
 
     return requirement_map
 
+def compute_requirement_coverage(matrix):
+    """
+    Calculate requirement coverage statistics.
+
+    Returns:
+        coverage_percent, tested_count, total_count, untested_requirements
+    """
+
+    total = len(matrix)
+
+    tested = [
+        r for r in matrix
+        if r.get("status") in ("PASS", "LINKED")
+    ]
+
+    untested = [
+        r["requirement_id"]
+        for r in matrix
+        if r.get("status") == "UNTESTED"
+    ]
+
+    tested_count = len(tested)
+
+    coverage = 0.0
+    if total > 0:
+        coverage = (tested_count / total) * 100
+
+    return coverage, tested_count, total, untested
+
+def compute_code_coverage():
+    """
+    Parse coverage.xml to compute overall coverage and
+    collect uncovered lines per file.
+    """
+
+    coverage_xml = PROJECT_ROOT / "artifacts" / "coverage" / "coverage.xml"
+
+    if not coverage_xml.exists():
+        return None, {}
+
+    tree = ET.parse(coverage_xml)
+    root = tree.getroot()
+
+    coverage_percent = float(root.attrib.get("line-rate", 0)) * 100
+
+    uncovered = {}
+
+    for cls in root.findall(".//class"):
+
+        filename = cls.attrib["filename"]
+
+        missing = []
+
+        for line in cls.findall(".//line"):
+
+            if line.attrib.get("hits") == "0":
+                missing.append(int(line.attrib["number"]))
+
+        if missing:
+            uncovered[filename] = sorted(missing)
+
+    return coverage_percent, uncovered
+
+def save_uncovered_lines(uncovered_lines):
+
+    output = PROJECT_ROOT / "artifacts" / "coverage" / "uncovered_lines.txt"
+
+    with output.open("w") as f:
+
+        for file, lines in sorted(uncovered_lines.items()):
+
+            f.write(f"{file}\n")
+
+            for ln in lines:
+                f.write(f"  line {ln}\n")
+
+            f.write("\n")
+
+    print(f"[Coverage] Uncovered lines saved to {output}")
 
 def generate_traceability_matrix():
     print("\n[Runner] Generating traceability matrix...\n")
@@ -160,9 +240,54 @@ def generate_traceability_matrix():
             entry["status"] = "LINKED"
         else:
             entry["status"] = "UNTESTED"
-        
+    
+    # ------------------------------------------------------------------
+    # Requirement Coverage Summary
+    # ------------------------------------------------------------------
+
+    coverage, tested_count, total_count, untested_requirements = compute_requirement_coverage(matrix)
+    
+        # ------------------------------------------------------------------
+    # Code Coverage
+    # ------------------------------------------------------------------
+
+    code_coverage, uncovered_lines = compute_code_coverage()
+
+    if code_coverage is not None:
+
+        print("\n[Coverage] Code Coverage Summary")
+        print("-------------------------------------------")
+        print(f"Coverage: {code_coverage:.1f}%")
+
+        if uncovered_lines:
+            print(f"[Coverage] {sum(len(v) for v in uncovered_lines.values())} uncovered lines detected")
+
+            save_uncovered_lines(uncovered_lines)
+
+    print("\n[Traceability] Requirement Coverage Summary")
+    print("-------------------------------------------")
+    print(f"Tested requirements: {tested_count} / {total_count}")
+    print(f"Coverage: {coverage:.1f}%")
+
+    if untested_requirements:
+        print("\n[Traceability] Untested requirements:")
+        for r in sorted(untested_requirements):
+            print(f"  - {r}")
+    
     OUTPUT_MATRIX.parent.mkdir(exist_ok=True)
-    write_markdown(matrix, OUTPUT_MATRIX)
+    write_markdown(
+        matrix,
+        OUTPUT_MATRIX,
+        req_coverage_summary={
+            "coverage": coverage,
+            "tested": tested_count,
+            "total": total_count,
+            "untested": untested_requirements,
+        },
+        code_coverage_summary={
+            "coverage": code_coverage
+        }
+    )
 
     abs_path = OUTPUT_MATRIX.resolve()
 

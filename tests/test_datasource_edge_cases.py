@@ -19,7 +19,7 @@ class DummyIngestor:
     def list_patient_ids(self):
         return self.ids
 
-    def load_patient(self, pid):
+    def load_patient_sample(self, pid):
         return DummyPatient()
 
 

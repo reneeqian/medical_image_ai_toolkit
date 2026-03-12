@@ -64,6 +64,23 @@ requirements:
       Dataset partitions generated using identical input datasets,
       configuration parameters, and random seeds shall produce
       identical partition assignments.
+  
+  - id: DAT-009
+    title: Training Tensor Extraction
+    description: >
+      Dataset ingestor implementations shall expose a deterministic
+      interface for converting dataset samples into aligned training
+      input and target tensors (X, Y). The returned tensors shall
+      maintain consistent dimensional ordering and shall represent
+      the learning task defined by the dataset.
+    
+  - id: DAT-010
+    title: Slice-Level Training Data Exposure
+    description: >
+      Dataset ingestors may expose slice-level training samples derived
+      from volumetric patient data. When slice-level training is used,
+      the ingestor shall return aligned input and target tensors for
+      each slice while maintaining patient-level dataset partitioning.
 
   # ==============================
   # System-Level Requirements
@@ -96,45 +113,16 @@ requirements:
       during a training run.
   
   # ==============================
-  # Task Definition Requirements
-  # ==============================
-
-  - id: TSK-001
-    title: Task Definition Object
-    description: >
-      Training workflows shall accept a TaskDefinition object that
-      specifies the model, loss function, and training configuration
-      required to execute a training run.
-
-  - id: TSK-002
-    title: Deterministic Task Configuration
-    description: >
-      A TaskDefinition object shall produce identical model and
-      training configuration when initialized with identical
-      parameters and random seeds.
-
-  - id: TSK-003
-    title: Dataset Compatibility Validation
-    description: >
-      TaskDefinition implementations shall validate that the
-      provided dataset interface exposes the data structures
-      required by the task before training execution begins.
-
-  - id: TSK-004
-    title: Task Artifact Registration
-    description: >
-      Training workflows shall record the TaskDefinition configuration
-      used for a training run as part of the generated training artifacts.
-    
-  # ==============================
   # Training Requirements
   # ==============================
 
   - id: TRN-001
     title: Configurable Training Execution
     description: >
-      Training workflows shall accept externally defined model architectures, 
-      optimizers, and hyperparameters without modification to core training logic.
+      Training workflows shall accept externally defined model
+      architectures, loss functions, optimizers, and hyperparameters
+      through a training configuration object without modification to
+      the core training logic.
 
   - id: TRN-002
     title: Hyperparameter Sweep Support
@@ -167,6 +155,23 @@ requirements:
       Model initialization during training shall be reproducible
       when executed with identical configuration parameters
       and random seeds.
+  
+  - id: TRN-007
+    title: Loss Function Configuration
+    description: >
+      The training configuration shall define the loss function used
+      during model optimization. The training workflow shall compute
+      optimization loss using this configured loss function applied
+      to the model outputs and dataset targets.
+  
+  - id: TRN-008
+    title: Training Input Interface
+    description: >
+      Training workflows shall obtain model inputs and targets through
+      the dataset datasource interface. Each retrieved sample shall
+      return aligned input and target arrays that can be iterated
+      during training without additional dataset-specific logic in
+      the trainer implementation.
       
   # ==============================
   # Model Requirements

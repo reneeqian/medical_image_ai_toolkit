@@ -21,14 +21,12 @@ class MedicalImageTrainer:
         self,
         datasource,
         model,
-        task,
         training_config,
         output_dir=None,
         random_seed=42
     ):
         self.datasource = datasource
         self.model = model
-        self.task = task
         self.config = training_config
 
         self.output_dir = Path(output_dir or "artifacts/training_runs")
@@ -80,31 +78,30 @@ class MedicalImageTrainer:
             
             for patient_id in train_ids:
 
-                sample = self.datasource.get_sample(patient_id)
-                x, y = self.task.prepare_training_sample(sample)
+                X, Y = self.datasource.get_sample(patient_id)
 
-                if not torch.isfinite(x).all():
-                    raise RuntimeError("NaN detected in input")
+                for idx in range(len(X)):
 
-                x = x.to(device, non_blocking=True)
+                    img = torch.tensor(X[idx], dtype=torch.float32).unsqueeze(0).to(device)
+                    target = torch.tensor(Y[idx], dtype=torch.float32).to(device)
 
-                if isinstance(y, torch.Tensor):
-                    y = y.to(device, non_blocking=True)
+                    optimizer.zero_grad(set_to_none=True)
 
-                pred = self.model(x)
+                    pred = self.model(img)
 
-                loss = self.task.compute_loss(pred, y)
+                    loss = self.config.loss_fcn(pred, target)
 
-                if not torch.isfinite(loss).all():
-                    raise RuntimeError("NaN loss detected")
+                    if not torch.isfinite(loss):
+                        raise RuntimeError("NaN loss detected")
 
-                optimizer.zero_grad(set_to_none=True)
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-                optimizer.step()
+                    loss.backward()
 
-                running_loss += loss.item()
-                n_samples += 1
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+
+                    optimizer.step()
+
+                    running_loss += loss.item()
+                    n_samples += 1
 
             epoch_loss = running_loss / max(n_samples, 1)
             epoch_losses.append(epoch_loss)

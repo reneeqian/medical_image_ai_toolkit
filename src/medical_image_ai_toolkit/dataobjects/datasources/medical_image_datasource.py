@@ -38,7 +38,7 @@ class MedicalImageDataSource:
         return list(self.patient_ids)
     
     def get_patient(self, patient_id: str):
-        return self.ingestor.load_patient(patient_id)
+        return self.ingestor.load_patient_sample(patient_id)
 
     def get_sample(self, patient_id: str):
         if hasattr(self.ingestor, "get_sample"):

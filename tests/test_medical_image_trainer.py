@@ -33,7 +33,7 @@ class SyntheticIngestor:
     def list_patient_ids(self):
         return self.patient_ids
 
-    def load_patient(self, patient_id):
+    def load_patient_sample(self, patient_id):
 
         # deterministic random seed per patient
         rng = np.random.default_rng(abs(hash(patient_id)) % (2**32))
@@ -78,42 +78,24 @@ class SyntheticIngestor:
             patient_id=patient_id,
             metadata={"source": "synthetic_test"},
         )
+    def get_sample(self, patient_id):
 
-# ---------------------------------------------------------
-# Synthetic Task Definition
-# ---------------------------------------------------------
-
-class SyntheticClassificationTask:
-    """
-    Minimal task used only for trainer tests.
-
-    Converts a PatientSample into:
-    x = center slice cropped to 32x32
-    y = binary label indicating lesion presence
-    """
-
-    def prepare_training_sample(self, sample):
+        sample = self.load_patient_sample(patient_id)
 
         volume = sample.image_volume
 
-        # use middle slice
         z = volume.shape[0] // 2
-        img = volume[z]
 
-        # crop to 32x32 for TinyConvNet
-        img = img[16:48, 16:48]
+        img = volume[z][16:48,16:48]
 
-        x = torch.tensor(img, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+        x = img.astype(np.float32)[None, None, :, :]  # N,C,H,W
 
-        # label = lesion present
         label = 1 if sample.annotations.vector_rois else 0
-        y = torch.tensor([label], dtype=torch.float32)
+
+        y = np.array([[label]], dtype=np.float32)
 
         return x, y
 
-    def compute_loss(self, pred, y):
-
-        return torch.nn.functional.mse_loss(pred.squeeze(), y.squeeze())
 
 # ---------------------------------------------------------
 # Deterministic Partition Strategy
@@ -203,15 +185,14 @@ def test_training_pipeline_generates_artifacts(
     config = TrainingConfig(
         epochs=2,
         batch_size=2,
-        learning_rate=1e-3
+        learning_rate=1e-3,
+        loss_fcn=torch.nn.MSELoss(),
+        device="cpu"
     )
-
-    task = SyntheticClassificationTask()
 
     trainer = MedicalImageTrainer(
         ds,
         model,
-        task,
         config
     )
 
@@ -268,15 +249,13 @@ def test_training_detects_nan_loss(
 
     config = TrainingConfig(
         epochs=1,
-        batch_size=2
+        batch_size=2,
+        loss_fcn=torch.nn.MSELoss(),
     )
-
-    task = SyntheticClassificationTask()
 
     trainer = MedicalImageTrainer(
         ds,
         model,
-        task,
         config
     )
 
@@ -316,17 +295,15 @@ def test_training_is_deterministic(
 
     config = TrainingConfig(
         epochs=2,
-        batch_size=2
+        batch_size=2,
+        loss_fcn=torch.nn.MSELoss(),
     )
 
     model1 = TinyConvNet()
     model2 = TinyConvNet()
-    
-    task1 = SyntheticClassificationTask()
-    task2 = SyntheticClassificationTask()
 
-    trainer1 = MedicalImageTrainer(ds1, model1, task1, config)
-    trainer2 = MedicalImageTrainer(ds2, model2, task2, config)
+    trainer1 = MedicalImageTrainer(ds1, model1, config)
+    trainer2 = MedicalImageTrainer(ds2, model2, config)
 
     results1 = trainer1.train()
     results2 = trainer2.train()
@@ -393,9 +370,6 @@ def test_trainer_sanity_check(tmp_path, evidence_output_dir):
 
         def get_num_patients(self): return 0
 
-    class DummyTask:
-        pass
-
     model = torch.nn.Linear(4,2)
 
     config = TrainingConfig()
@@ -403,7 +377,6 @@ def test_trainer_sanity_check(tmp_path, evidence_output_dir):
     trainer = MedicalImageTrainer(
         DummyDatasource(),
         model,
-        DummyTask(),
         config
     )
 
