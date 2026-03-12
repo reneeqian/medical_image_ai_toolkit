@@ -138,6 +138,7 @@ class MedicalImageDataSource:
         show_annotations: bool = False,
         show_bboxes: bool = False,
         cols: int = 5,
+        block: bool = True,
     ):
         
         sample = self.get_patient(patient_id)
@@ -190,7 +191,7 @@ class MedicalImageDataSource:
         axes = axes.flatten()
 
         for i, slice_idx in enumerate(slice_indices):
-            if slice_idx in vector_rois:
+            if vector_rois and slice_idx in vector_rois:
                 print("Slice", slice_idx, "ROIs:", len(vector_rois[slice_idx]))
 
             ax = axes[i]
@@ -252,7 +253,12 @@ class MedicalImageDataSource:
 
         plt.suptitle(f"Patient {patient_id}")
         plt.tight_layout()
-        plt.show()
+
+        if block:
+            plt.show()
+        else:
+            plt.show(block=False)
+            plt.close(fig)
     
     # ---------------------------------------------------------
     # Internal utilities

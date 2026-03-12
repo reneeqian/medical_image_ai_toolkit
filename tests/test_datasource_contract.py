@@ -226,17 +226,17 @@ def test_show_slice_basic(tmp_path, evidence_output_dir):
 
     # slice_index must be valid
     try:
-        ds.show_slice("P0", slice_index=0)
+        ds.show_slice("P0", slice_index=0, block = False)
     except Exception as e:
         report.error(f"show_slice raised unexpected exception: {e}", "DAT-004")
 
     # slice_index out of bounds
     with pytest.raises(IndexError):
-        ds.show_slice("P0", slice_index=100)
+        ds.show_slice("P0", slice_index=100, block = False)
 
     # require ValueError if neither slice_index nor slice_range nor annotated_only
     with pytest.raises(ValueError):
-        ds.show_slice("P0")
+        ds.show_slice("P0", block = False)
 
     report.auto_save("DAT004_show_slice_basic", evidence_output_dir)
     assert not report.has_errors, report.summary()
