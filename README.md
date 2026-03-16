@@ -3,36 +3,30 @@
 Engineering infrastructure for developing medical imaging AI systems
 under structured SaMD design principles.
 
+This is a learning project.
+
 ---
 
-## 1. Purpose
+## Purpose
 
 This repository provides reusable infrastructure for:
 
-- Deterministic data handling
-- Structured dataset objects
-- Model artifact persistence
-- Validation enforcement
-- Evidence capture
+- deterministic dataset construction
+- image ingestion pipelines
+- experiment reproducibility
+- structured validation
+- artifact generation
 
-This is an engineering toolkit — not a research notebook framework.
-
----
-
-## 2. Design Principles
-
-- Deterministic execution
-- Explicit validation
-- Structured requirements
-- Reproducible experiment tracking
-- Machine-readable traceability
+It is designed for projects developed under **SaMD-style engineering practices**.
 
 ---
 
-## 3. Repository Structure
+## Repository Structure
 
 ```
 medical_image_ai_toolkit/
+├── src/
+│ └── medical_image_ai_toolkit/
 ├── docs/
 │ └── requirements.yaml
 ├── tests/
@@ -42,10 +36,5 @@ medical_image_ai_toolkit/
 
 
 ---
-
-## 4. Regulatory Position
-
-This toolkit demonstrates engineering patterns aligned with
-regulated AI system development. It is not a cleared device.
 
 Requirements follow the convention defined in regulatory_tools/docs/Requirements_Convention.md
