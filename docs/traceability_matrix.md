@@ -24,8 +24,8 @@ Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 | DAT-008 | Deterministic Dataset Partitioning | tests/test_datasource_contract.py::test_dataset_partition_generation |  | UNTESTED |
 | DAT-009 | Training Tensor Extraction |  |  | UNTESTED |
 | DAT-010 | Slice-Level Training Data Exposure | tests/test_datasource_edge_cases.py::test_datasource_edge_cases |  | UNTESTED |
-| DOC-001 | Machine-Readable Requirements Definition | tests/test_project_structure.py::test_project_documentation_structure | project_documentation_structure_20260313_103536_260127.json | PASS |
-| DOC-002 | Basic Project Documentation | tests/test_project_structure.py::test_project_documentation_structure | project_documentation_structure_20260313_103536_260127.json | PASS |
+| DOC-001 | Machine-Readable Requirements Definition | tests/test_project_structure.py::test_project_documentation_structure | project_documentation_structure_20260316_103409_266979.json | PASS |
+| DOC-002 | Basic Project Documentation | tests/test_project_structure.py::test_project_documentation_structure | project_documentation_structure_20260316_103409_266979.json | PASS |
 | DOC-003 | Training Workflow Documentation |  |  | UNTESTED |
 | DOC-004 | Training Report Generation | tests/test_training_results.py::test_mark_training_complete_summary, tests/test_training_results.py::test_summary_training_running, tests/test_training_results.py::test_training_results_artifact_generation |  | UNTESTED |
 | MOD-001 | Model Optimization Support |  |  | UNTESTED |
@@ -40,7 +40,7 @@ Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 | SYS-004 | Training Result Aggregation | tests/test_medical_image_trainer.py::test_training_pipeline_generates_artifacts |  | UNTESTED |
 | TRN-001 | Configurable Training Execution | tests/test_task_definition.py::test_postprocess_prediction_default, tests/test_task_definition.py::test_postprocess_prediction_passthrough, tests/test_task_definition.py::test_task_definition_cannot_instantiate_abstract, tests/test_task_definition.py::test_task_definition_interface |  | UNTESTED |
 | TRN-002 | Hyperparameter Sweep Support |  |  | UNTESTED |
-| TRN-003 | Training Shall Detect Nan Loss | tests/test_medical_image_trainer.py::test_training_detects_nan_loss | TRN003_nan_loss_detection_20260313_103536_198303.json | PASS |
+| TRN-003 | Training Shall Detect Nan Loss | tests/test_medical_image_trainer.py::test_training_detects_nan_loss | TRN003_nan_loss_detection_20260316_103409_205924.json | PASS |
 | TRN-004 | Training Run Artifact Generation | tests/test_medical_image_trainer.py::test_training_pipeline_generates_artifacts |  | UNTESTED |
 | TRN-005 | Training Checkpoint Support |  |  | UNTESTED |
 | TRN-006 | Deterministic Training Initialization | tests/test_medical_image_trainer.py::test_training_is_deterministic |  | UNTESTED |

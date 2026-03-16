@@ -5,7 +5,4 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 SOURCE_DIR = PROJECT_ROOT / "src"
 
 if __name__ == "__main__":
-    run_tests_and_trace(
-        project_root=PROJECT_ROOT,
-        source_dir=SOURCE_DIR
-    )
+    run_tests_and_trace(project_root=PROJECT_ROOT)
