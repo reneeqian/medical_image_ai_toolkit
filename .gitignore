@@ -102,3 +102,4 @@ Desktop.ini
 !docs/traceability.md
 !docs/*.md
 .DS_Store
+tests/__pycache__/test_medical_image_trainer.cpython-310-pytest-9.0.2.pyc
