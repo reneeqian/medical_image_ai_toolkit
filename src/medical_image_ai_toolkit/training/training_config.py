@@ -1,4 +1,5 @@
 import torch
+from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
 
 class TrainingConfig:
     """
@@ -12,7 +13,7 @@ class TrainingConfig:
             learning_rate: float = 1e-4,
             device: str = "cpu",
             num_workers: int = 0,
-            loss_fcn: torch.nn.Module = torch.nn.MSELoss(),
+            task: TrainingTaskDefinition = None,
             optimizer: torch.optim.Optimizer = torch.optim.Adam,
         ):
 
@@ -21,5 +22,5 @@ class TrainingConfig:
         self.learning_rate = learning_rate
         self.device = device
         self.num_workers = num_workers
-        self.loss_fcn = loss_fcn
+        self.task = task
         self.optimizer = optimizer

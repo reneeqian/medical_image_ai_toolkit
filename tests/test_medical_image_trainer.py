@@ -9,6 +9,7 @@ from medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
 from medical_image_ai_toolkit.dataobjects.annotation_bundle import AnnotationBundle, VectorROI
 from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import MedicalImageDataSource
 from medical_image_ai_toolkit.training.medical_image_trainer import MedicalImageTrainer
+from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
 from medical_image_ai_toolkit.training.training_config import TrainingConfig
 
 from regulatory_tools.evidence.evidence_report import EvidenceReport
@@ -96,6 +97,21 @@ class SyntheticIngestor:
 
         return x, y
 
+# ---------------------------------------------------------
+# Dummy Task Definition
+# ---------------------------------------------------------
+
+class DummyTask(TrainingTaskDefinition):
+
+    def generate_training_samples(self, patient_sample):
+        for _ in range(2):
+            yield {
+                "input": torch.zeros((1, 1, 32, 32)),
+                "target": torch.ones((1, 1, 32, 32))
+            }
+
+    def compute_loss(self, prediction, target):
+        return torch.mean((prediction - target) ** 2)
 
 # ---------------------------------------------------------
 # Deterministic Partition Strategy
@@ -186,8 +202,8 @@ def test_training_pipeline_generates_artifacts(
         epochs=2,
         batch_size=2,
         learning_rate=1e-3,
-        loss_fcn=torch.nn.MSELoss(),
-        device="cpu"
+        device="cpu",
+        task=DummyTask()
     )
 
     trainer = MedicalImageTrainer(
@@ -234,6 +250,26 @@ def test_training_detects_nan_loss(
     evidence_output_dir,
 ):
 
+    class NaNTask(TrainingTaskDefinition):
+
+        def generate_training_samples(self, patient_sample):
+
+            # propagate real data (which may contain NaNs)
+            vol = patient_sample.image_volume
+
+            for i in range(vol.shape[0]):
+
+                img = torch.tensor(vol[i]).unsqueeze(0).unsqueeze(0)
+                target = torch.zeros_like(img)
+
+                yield {
+                    "input": img,
+                    "target": target
+                }
+
+        def compute_loss(self, prediction, target):
+            return torch.mean((prediction - target) ** 2)
+
     report = EvidenceReport(
         subject="NaN loss detection during training"
     )
@@ -250,7 +286,7 @@ def test_training_detects_nan_loss(
     config = TrainingConfig(
         epochs=1,
         batch_size=2,
-        loss_fcn=torch.nn.MSELoss(),
+        task=NaNTask()
     )
 
     trainer = MedicalImageTrainer(
@@ -260,7 +296,6 @@ def test_training_detects_nan_loss(
     )
 
     with pytest.raises(RuntimeError):
-
         trainer.train()
 
     report.info(
@@ -296,7 +331,7 @@ def test_training_is_deterministic(
     config = TrainingConfig(
         epochs=2,
         batch_size=2,
-        loss_fcn=torch.nn.MSELoss(),
+        task=DummyTask(),
     )
 
     model1 = TinyConvNet()

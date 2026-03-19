@@ -42,6 +42,8 @@ class MedicalImageTrainer:
     def train(self):
         if not self.datasource.has_partitions():
             raise RuntimeError("Datasource partitions not created")
+        if self.config.task is None:
+            raise ValueError("TrainingConfig.task must be set")
 
         train_ids = self.datasource.get_train_ids()
 
@@ -49,7 +51,7 @@ class MedicalImageTrainer:
 
         self.model.to(device)
 
-        optimizer = torch.optim.Adam(
+        optimizer = self.config.optimizer(
             self.model.parameters(),
             lr=self.config.learning_rate
         )
@@ -76,20 +78,25 @@ class MedicalImageTrainer:
             running_loss = 0.0
             n_samples = 0
             
+            task = self.config.task
+
             for patient_id in train_ids:
 
-                X, Y = self.datasource.get_sample(patient_id)
+                patient_sample = self.datasource.get_patient(patient_id)
 
-                for idx in range(len(X)):
+                for sample in task.generate_training_samples(patient_sample):
 
-                    img = torch.tensor(X[idx], dtype=torch.float32).unsqueeze(0).to(device)
-                    target = torch.tensor(Y[idx], dtype=torch.float32).to(device)
+                    x = sample["input"].to(device)
+                    y = sample["target"]
+
+                    if isinstance(y, torch.Tensor):
+                        y = y.to(device)
 
                     optimizer.zero_grad(set_to_none=True)
 
-                    pred = self.model(img)
+                    pred = self.model(x)
 
-                    loss = self.config.loss_fcn(pred, target)
+                    loss = task.compute_loss(pred, y)
 
                     if not torch.isfinite(loss):
                         raise RuntimeError("NaN loss detected")
