@@ -3,6 +3,7 @@ import torch
 import numpy as np
 
 from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
+from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 
 class DummyTask(TrainingTaskDefinition):
@@ -27,7 +28,10 @@ class DummyPatientSample:
 
 @pytest.mark.requirement("DAT-009")
 @pytest.mark.requirement("TRN-008")
-def test_task_generates_aligned_samples():
+def test_task_generates_aligned_samples(evidence_output_dir):
+    
+    report = EvidenceReport(subject="Task generates aligned input-target samples")
+    
     task = DummyTask()
     sample = DummyPatientSample()
 
@@ -41,10 +45,19 @@ def test_task_generates_aligned_samples():
     assert isinstance(x, torch.Tensor)
     assert isinstance(y, torch.Tensor)
     assert x.shape == y.shape
+    
+    report.auto_save(
+        "TRN008_task_sample_alignment",
+        evidence_output_dir
+    )
+    assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("TRN-007")
-def test_task_compute_loss():
+def test_task_compute_loss(evidence_output_dir):
+    
+    report = EvidenceReport(subject="Task compute_loss returns a finite scalar tensor")
+    
     task = DummyTask()
 
     pred = torch.zeros((1, 1, 32, 32))
@@ -54,13 +67,47 @@ def test_task_compute_loss():
 
     assert isinstance(loss, torch.Tensor)
     assert loss.item() > 0
+    
+    report.auto_save(
+        "TRN007_task_compute_loss",
+        evidence_output_dir
+    )
+    assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("DAT-010")
-def test_task_slice_level_iteration():
+def test_task_slice_level_iteration(evidence_output_dir):
+    
+    report = EvidenceReport(subject="Task generates samples for each slice in patient volume")
+    
     task = DummyTask()
     sample = DummyPatientSample()
 
     outputs = list(task.generate_training_samples(sample))
 
     assert len(outputs) == 3
+    
+    report.auto_save(   
+        "DAT010_task_slice_iteration",
+        evidence_output_dir
+    )
+    assert not report.has_errors, report.summary()
+
+@pytest.mark.requirement("TRN-008")
+def test_postprocess_prediction_identity(evidence_output_dir):
+    
+    report = EvidenceReport(subject="Task postprocess_prediction should be identity by default")
+
+    task = DummyTask()
+
+    x = torch.randn(1, 1)
+
+    out = task.postprocess_prediction(x)
+
+    assert torch.equal(x, out)
+    
+    report.auto_save(
+        "TRN008_task_postprocess_prediction_identity",
+        evidence_output_dir
+    )
+    assert not report.has_errors, report.summary()

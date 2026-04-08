@@ -14,6 +14,7 @@ class TrainingConfig:
             device: str = "cpu",
             num_workers: int = 0,
             task: TrainingTaskDefinition = None,
+            split_strategy = None,
             optimizer: torch.optim.Optimizer = torch.optim.Adam,
         ):
 
@@ -23,4 +24,5 @@ class TrainingConfig:
         self.device = device
         self.num_workers = num_workers
         self.task = task
+        self.split_strategy = split_strategy
         self.optimizer = optimizer

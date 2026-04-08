@@ -240,3 +240,50 @@ def test_show_slice_basic(tmp_path, evidence_output_dir):
 
     report.auto_save("DAT004_show_slice_basic", evidence_output_dir)
     assert not report.has_errors, report.summary()
+    
+@pytest.mark.requirement("DAT-008")
+def test_partitions_are_deterministic(tmp_path, evidence_output_dir):
+    
+    report = EvidenceReport(subject="Datasource partition determinism")
+
+    ds1 = MedicalImageDataSource(tmp_path, DummyIngestor())
+    ds2 = MedicalImageDataSource(tmp_path, DummyIngestor())
+
+    split = DummyPartitionStrategy()
+
+    t1, v1, te1 = ds1.create_partitions(split)
+    t2, v2, te2 = ds2.create_partitions(split)
+
+    assert t1 == t2
+    assert v1 == v2
+    assert te1 == te2
+    
+    report.auto_save("DAT008_partitions_are_deterministic", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+@pytest.mark.requirement("DAT-007")
+def test_access_before_partition_raises(tmp_path, evidence_output_dir):
+    
+    report = EvidenceReport(subject="Datasource access before partitioning")
+
+    ds = MedicalImageDataSource(tmp_path, DummyIngestor())
+
+    with pytest.raises(RuntimeError):
+        ds.get_train_ids()
+        
+    report.auto_save("DAT007_access_before_partition_raises", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+    
+@pytest.mark.requirement("DAT-004")
+def test_invalid_patient_id_raises(tmp_path, evidence_output_dir):
+    
+    report = EvidenceReport(subject="Datasource invalid patient ID handling")
+
+    ds = MedicalImageDataSource(tmp_path, DummyIngestor())
+    ds.create_partitions(DummyPartitionStrategy())
+
+    with pytest.raises(Exception):
+        ds.get_patient("INVALID_ID")
+        
+    report.auto_save("DAT004_invalid_patient_id_raises", evidence_output_dir)
+    assert not report.has_errors, report.summary()

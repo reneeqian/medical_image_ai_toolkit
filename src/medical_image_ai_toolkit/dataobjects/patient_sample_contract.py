@@ -31,28 +31,28 @@ def _check_volume(sample: PatientSample, report: EvidenceReport) -> None:
     if not isinstance(vol, np.ndarray):
         report.error(
             message="image_volume is not a numpy array",
-            requirement_id="DAT-001",
+            requirement_tag="dataset_validation",
         )
         return
 
     if vol.ndim != 3:
         report.error(
             message="image_volume is not 3D",
-            requirement_id="DAT-001",
+            requirement_tag="dataset_validation",
             context=f"shape={vol.shape}",
         )
         return
 
     report.info(
         message="volume shape OK",
-        requirement_id="DAT-001",
+        requirement_tag="dataset_validation",
         context=str(vol.shape),
     )
 
     if vol.shape[1] <= 0 or vol.shape[2] <= 0:
         report.error(
             message="Invalid spatial dimensions",
-            requirement_id="DAT-001",
+            requirement_tag="dataset_validation",
             context=f"shape={vol.shape}",
         )
 
@@ -63,13 +63,13 @@ def _check_spacing(sample: PatientSample, report: EvidenceReport) -> None:
     if spacing is None:
         report.error(
             message="spacing must not be None",
-            requirement_id="DAT-001",)
+            requirement_tag="dataset_validation",)
         return
 
     if len(spacing) != 3:
         report.error(
             message="spacing must be (z, y, x)",
-            requirement_id="DAT-001",
+            requirement_tag="dataset_validation",
             context=f"got {spacing}",
         )
         return
@@ -77,13 +77,13 @@ def _check_spacing(sample: PatientSample, report: EvidenceReport) -> None:
     if any(s <= 0 for s in spacing):
         report.error(
             message="spacing values must be > 0",
-            requirement_id="DAT-001",
+            requirement_tag="dataset_validation",
             context=str(spacing),
         )
     else:
         report.info(
             message="spacing OK",
-            requirement_id="DAT-001",
+            requirement_tag="dataset_validation",
             context=str(spacing),
         )
 
@@ -91,12 +91,12 @@ def _check_patient_id(sample: PatientSample, report: EvidenceReport) -> None:
     if not sample.patient_id:
         report.error(
             message="patient_id must be set",
-            requirement_id="DAT-001",
+            requirement_tag="dataset_validation",
         )
     else:
         report.info(
             message="patient_id OK",
-            requirement_id="DAT-001",
+            requirement_tag="dataset_validation",
             context=sample.patient_id,
         )
         
@@ -113,7 +113,7 @@ def _check_annotations(
     if vol is None or not hasattr(vol, "shape"):
         report.error(
             message="Image volume missing or invalid",
-            requirement_id="DAT-001",
+            requirement_tag="annotation_validation",
         )
         return
 
@@ -122,12 +122,12 @@ def _check_annotations(
         if require_annotations:
             report.error(
                 message="Annotations required but none found",
-                requirement_id="DAT-002",
+                requirement_tag="annotation_validation",
             )
         else:
             report.warn(
                 message="No annotations present",
-                requirement_id="DAT-002",
+                requirement_tag="annotation_validation",
             )
         return
     
@@ -135,7 +135,7 @@ def _check_annotations(
     if isinstance(ann, np.ndarray):
         report.info(
             message="Dense annotation mask present (raster annotation)",
-            requirement_id="DAT-002",
+            requirement_tag="annotation_validation",
             context=f"shape={ann.shape}",
         )
         return
@@ -144,7 +144,7 @@ def _check_annotations(
     if not hasattr(ann, "vector_rois"):
         report.error(
             message="Annotations object missing vector_rois attribute",
-            requirement_id="DAT-002",
+            requirement_tag="annotation_validation",
             context=f"type={type(ann)}",
         )
         return
@@ -153,26 +153,26 @@ def _check_annotations(
         if require_annotations:
             report.error(
                 message="Annotations required but vector_rois is None",
-                requirement_id="DAT-002",
+                requirement_tag="annotation_validation",
             )
         else:
             report.warn(
                 message="vector_rois is None",
-                requirement_id="DAT-002",
+                requirement_tag="annotation_validation",
             )
         return
 
     if not isinstance(ann.vector_rois, dict):
         report.error(
             message="vector_rois must be a dict",
-            requirement_id="DAT-002",
+            requirement_tag="annotation_validation",
             context=f"type={type(ann.vector_rois)}",
         )
         return
 
     report.info(
         message="annotations present",
-        requirement_id="DAT-002",
+        requirement_tag="annotation_validation",
         context=f"slices={sorted(ann.vector_rois.keys())}",
     )
 
@@ -183,7 +183,7 @@ def _check_annotations(
         if not isinstance(slice_idx, int):
             report.error(
                 message="Slice index must be int",
-                requirement_id="DAT-003",
+                requirement_tag="annotation_validation",
                 context=f"type={type(slice_idx)}",
             )
             continue
@@ -191,7 +191,7 @@ def _check_annotations(
         if slice_idx < 0 or slice_idx >= depth:
             report.error(
                 message="ROI slice out of bounds",
-                requirement_id="DAT-003",
+                requirement_tag="annotation_validation",
                 context=f"slice={slice_idx}, depth={depth}",
             )
             continue
@@ -199,7 +199,7 @@ def _check_annotations(
         if not isinstance(rois, (list, tuple)):
             report.error(
                 message="ROIs for slice must be a list",
-                requirement_id="DAT-003",
+                requirement_tag="annotation_validation",
                 context=f"type={type(rois)}",
             )
             continue
@@ -208,7 +208,7 @@ def _check_annotations(
             if not isinstance(roi, VectorROI):
                 report.error(
                     message="ROI must be VectorROI",
-                    requirement_id="DAT-003",
+                    requirement_tag="annotation_validation",
                     context=f"type={type(roi)}",
                 )
                 continue
@@ -232,7 +232,7 @@ def _check_vector_roi(
     if contour.ndim != 2 or contour.shape[1] != 2:
         report.error(
             message="ROI contour must be (N, 2)",
-            requirement_id="DAT-003",
+            requirement_tag="annotation_validation",
             context=f"slice={slice_idx}, shape={contour.shape}",
         )
         return
@@ -242,13 +242,13 @@ def _check_vector_roi(
     if (contour[:, 0] < 0).any() or (contour[:, 0] >= w).any():
         report.error(
             message="ROI x-coordinates out of bounds",
-            requirement_id="DAT-003",
+            requirement_tag="annotation_validation",
             context=f"slice={slice_idx}, width={w}",
         )
 
     if (contour[:, 1] < 0).any() or (contour[:, 1] >= h).any():
         report.error(
             message="ROI y-coordinates out of bounds",
-            requirement_id="DAT-003",
+            requirement_tag="annotation_validation",
             context=f"slice={slice_idx}, height={h}",
         )

@@ -38,9 +38,13 @@ class MedicalImageDataSource:
         return list(self.patient_ids)
     
     def get_patient(self, patient_id: str):
+        if patient_id not in self.patient_ids:
+            raise ValueError(f"Patient ID '{patient_id}' not found in dataset")
         return self.ingestor.load_patient_sample(patient_id)
 
     def get_sample(self, patient_id: str):
+        if patient_id not in self.patient_ids:
+            raise ValueError(f"Patient ID '{patient_id}' not found in dataset")
         if hasattr(self.ingestor, "get_sample"):
             return self.ingestor.get_sample(patient_id)
 

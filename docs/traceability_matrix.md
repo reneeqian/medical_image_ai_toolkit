@@ -20,8 +20,8 @@ Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 | DAT-004 | Patient Sample Boundary Validation | tests/test_datasource_contract.py::test_datasource_behaviors, tests/test_datasource_contract.py::test_show_slice_basic |  | UNTESTED |
 | DAT-005 | Patient Sample To Tensor Conversion | tests/test_patient_sample.py::test_patient_sample_basic, tests/test_patient_sample.py::test_patient_sample_repr_with_annotations |  | UNTESTED |
 | DAT-006 | Patient Indexing without Loading | tests/test_datasource_contract.py::test_dataset_partition_generation, tests/test_datasource_contract.py::test_get_num_patients_and_get_patient |  | UNTESTED |
-| DAT-007 | Dataset Partition Generation | tests/test_datasource_contract.py::test_dataset_partition_generation, tests/test_datasource_contract.py::test_datasource_behaviors, tests/test_datasource_contract.py::test_has_partitions_flag |  | UNTESTED |
-| DAT-008 | Deterministic Dataset Partitioning | tests/test_datasource_contract.py::test_dataset_partition_generation |  | UNTESTED |
+| DAT-007 | Dataset Partition Generation | tests/test_datasource_contract.py::test_access_before_partition_raises, tests/test_datasource_contract.py::test_dataset_partition_generation, tests/test_datasource_contract.py::test_datasource_behaviors, tests/test_datasource_contract.py::test_has_partitions_flag |  | UNTESTED |
+| DAT-008 | Deterministic Dataset Partitioning | tests/test_datasource_contract.py::test_dataset_partition_generation, tests/test_datasource_contract.py::test_partitions_are_deterministic |  | UNTESTED |
 | DAT-009 | Training Tensor Extraction | tests/test_task_definition.py::test_task_generates_aligned_samples |  | UNTESTED |
 | DAT-010 | Slice-Level Training Data Exposure | tests/test_datasource_edge_cases.py::test_datasource_edge_cases, tests/test_task_definition.py::test_task_slice_level_iteration |  | UNTESTED |
 | DOC-001 | Machine-Readable Requirements Definition | tests/test_project_structure.py::test_project_documentation_structure |  | PASS |

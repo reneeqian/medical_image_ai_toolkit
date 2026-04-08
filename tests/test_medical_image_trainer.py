@@ -423,3 +423,115 @@ def test_trainer_sanity_check(tmp_path, evidence_output_dir):
     )
 
     assert not report.has_errors, report.summary()
+
+@pytest.mark.requirement("SYS-002")
+def test_training_without_partitions_fails(tmp_path, evidence_output_dir):
+    
+    report = EvidenceReport(subject="Training without dataset partitions should fail")
+
+    ds = MedicalImageDataSource(tmp_path, SyntheticIngestor())
+
+    model = TinyConvNet()
+
+    config = TrainingConfig(
+        epochs=1,
+        task=DummyTask()
+    )
+
+    trainer = MedicalImageTrainer(ds, model, config)
+
+    with pytest.raises(RuntimeError):
+        trainer.train()
+    
+    report.auto_save(
+        "SYS002_training_without_partitions_fails",
+        evidence_output_dir
+    )
+    assert not report.has_errors, report.summary()
+
+@pytest.mark.requirement("TRN-001")
+def test_training_without_task_fails(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Training without task should fail")
+
+    ds = MedicalImageDataSource(tmp_path, SyntheticIngestor())
+    ds.create_partitions(DeterministicSplit())
+
+    model = TinyConvNet()
+
+    config = TrainingConfig(
+        epochs=1,
+        task=None
+    )
+
+    trainer = MedicalImageTrainer(ds, model, config)
+
+    with pytest.raises(ValueError):
+        trainer.train()
+    
+    report.auto_save(
+        "TRN001_training_without_task_fails",
+        evidence_output_dir
+    )
+    assert not report.has_errors, report.summary()
+
+@pytest.mark.requirement("TRN-001")
+def test_training_respects_device(tmp_path, evidence_output_dir):
+    
+    report = EvidenceReport(subject="Training respects device configuration")
+
+    ds = MedicalImageDataSource(tmp_path, SyntheticIngestor())
+    ds.create_partitions(DeterministicSplit())
+
+    model = TinyConvNet()
+
+    config = TrainingConfig(
+        epochs=1,
+        device="cpu",
+        task=DummyTask()
+    )
+
+    trainer = MedicalImageTrainer(ds, model, config)
+
+    trainer.train()
+
+    for p in model.parameters():
+        assert p.device.type == "cpu"
+
+    report.auto_save(
+        "TRN001_training_respects_device",
+        evidence_output_dir
+    )
+    assert not report.has_errors, report.summary()
+
+@pytest.mark.requirement("SYS-002")
+def test_training_with_no_patients(tmp_path, evidence_output_dir):
+    
+    report = EvidenceReport(subject="Training with no patients should complete without error")
+
+    class EmptyIngestor:
+        def list_patient_ids(self): return []
+        def load_patient_sample(self, pid): pass
+
+    ds = MedicalImageDataSource(tmp_path, EmptyIngestor())
+    ds.create_partitions(DeterministicSplit())
+
+    model = TinyConvNet()
+
+    config = TrainingConfig(
+        epochs=1,
+        task=DummyTask()
+    )
+
+    trainer = MedicalImageTrainer(ds, model, config)
+
+    results = trainer.train()
+
+    assert results.metrics["num_train_samples"] == 0
+    
+    report.auto_save(
+        "SYS002_training_with_no_patients",
+        evidence_output_dir
+    )
+    assert not report.has_errors, report.summary()
+
