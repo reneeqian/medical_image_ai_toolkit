@@ -267,19 +267,22 @@ requirements:
     description: >
       The project shall include a machine-readable
       requirements.yaml file defining system requirements.
+    tags: [documentation]
 
   - id: DOC-002
     title: Basic Project Documentation
     description: >
       The project shall include a README file describing
       system purpose, configuration, and execution steps.
-  
+    tags: [documentation]
+
   - id: DOC-003
     title: Training Workflow Documentation
     description: >
       Project documentation shall describe the expected workflow
       for dataset preparation, model training, and evaluation
       using the toolkit.
+    tags: [documentation]
 
   - id: DOC-004
     title: Training Report Generation
@@ -287,3 +290,4 @@ requirements:
       The system shall support generation of a structured
       training report summarizing training configuration,
       dataset partitions, model artifacts, and evaluation metrics.
+    tags: [documentation]
