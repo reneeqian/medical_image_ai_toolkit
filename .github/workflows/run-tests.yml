@@ -37,4 +37,4 @@ jobs:
 
       - name: Run verification suite
         run: |
-          python run_tests_and_trace.py
+          python runtests.py
