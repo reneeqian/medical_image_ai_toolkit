@@ -156,8 +156,8 @@ def _check_annotations(
                 requirement_tag="annotation_validation",
             )
         else:
-            report.warn(
-                message="vector_rois is None",
+            report.info(
+                message="No annotations found (vector_rois is None) — patient may not have annotations but this is not required",
                 requirement_tag="annotation_validation",
             )
         return

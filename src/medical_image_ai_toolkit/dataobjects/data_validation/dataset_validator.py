@@ -51,56 +51,86 @@ class DatasetValidator:
 
 def summarize_invalid_annotation_slices(report):
     """
-    Extract and group invalid annotation slice warnings
-    into a compact summary.
+    Extract and group invalid annotation slice warnings into a compact summary,
+    including which patients failed to load entirely.
+
+    Context format emitted by ingestor:
+        "file=... | raw_index=... | computed_index=... | num_slices=..."
     """
 
-    grouped = defaultdict(set)
+    # --- Out-of-bounds annotation slices ---
+    grouped = defaultdict(lambda: {"raw_indices": set(), "num_slices": None})
 
     for issue in report.issues:
         if issue.level != "WARN":
             continue
-
         if "Invalid slice index in annotation" not in issue.message:
             continue
-
         if not issue.context:
             continue
 
-        # Parse context: "file=... | slice=..."
-        parts = dict(
-            item.strip().split("=")
-            for item in issue.context.split("|")
-            if "=" in item
-        )
+        parts = {}
+        for item in issue.context.split("|"):
+            item = item.strip()
+            if "=" in item:
+                k, v = item.split("=", 1)
+                parts[k.strip()] = v.strip()
 
         file_path = parts.get("file")
-        slice_idx = parts.get("slice")
+        raw_index = parts.get("raw_index")
+        num_slices = parts.get("num_slices")
 
-        if not file_path or slice_idx is None:
+        if not file_path or raw_index is None:
             continue
 
         filename = Path(file_path).name
-        grouped[filename].add(int(slice_idx))
+        grouped[filename]["raw_indices"].add(int(raw_index))
+        if num_slices is not None:
+            grouped[filename]["num_slices"] = int(num_slices)
 
-    # Print clean summary
+    # --- Failed patient loads ---
+    failed_patients = []
+    for issue in report.issues:
+        if issue.level != "ERROR":
+            continue
+        if "Failed to load patient" not in issue.message:
+            continue
+        if issue.context:
+            parts = {}
+            for item in issue.context.split("|"):
+                item = item.strip()
+                if "=" in item:
+                    k, v = item.split("=", 1)
+                    parts[k.strip()] = v.strip()
+            pid = parts.get("patient", "unknown")
+            err = parts.get("error", "unknown error")
+            failed_patients.append((pid, err))
+
+    # --- Print summaries ---
     print("\n=== Invalid Annotation Slice Summary ===")
 
     if not grouped:
-        print("No invalid annotation slices found.")
-        return
+        print("No out-of-bounds annotation slices found.")
+    else:
+        print(f"{'File':<20} {'Vol Slices':>10}  Out-of-bounds raw ImageIndex values")
+        print("-" * 70)
+        for fname, data in sorted(grouped.items()):
+            raw_list = sorted(data["raw_indices"])
+            ns_str = str(data["num_slices"]) if data["num_slices"] is not None else "?"
+            if len(raw_list) > 10:
+                display = str(raw_list[:10])[:-1] + f", ... +{len(raw_list)-10} more]"
+            else:
+                display = str(raw_list)
+            print(f"{fname:<20} {ns_str:>10}  {display}")
 
-    for fname, slices in sorted(grouped.items()):
-        slice_list = sorted(slices)
+    print()
 
-        # truncate long lists
-        if len(slice_list) > 10:
-            display = slice_list[:10]
-            suffix = f"... (+{len(slice_list) - 10} more)"
-        else:
-            display = slice_list
-            suffix = ""
+    if failed_patients:
+        print(f"=== Failed Patient Loads ({len(failed_patients)}) ===")
+        for pid, err in failed_patients:
+            short_err = (err[:120] + "...") if len(err) > 120 else err
+            print(f"  patient={pid}: {short_err}")
+    else:
+        print("No patient load failures.")
 
-        print(f"{fname} → {display} {suffix}")
-
-    print("=== End Summary ===\n")
+    print("\n=== End Summary ===\n")
