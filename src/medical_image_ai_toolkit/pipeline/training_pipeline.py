@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import MedicalImageDataSource
-from medical_image_ai_toolkit.dataobjects.data_validation.dataset_validator import DatasetValidator, summarize_invalid_annotation_slices
+from medical_image_ai_toolkit.dataobjects.data_validation.dataset_validator import DatasetValidator, summarize_dataset_validation
 from medical_image_ai_toolkit.training.medical_image_trainer import MedicalImageTrainer
 from medical_image_ai_toolkit.training.training_config import TrainingConfig
 from medical_image_ai_toolkit.results.medical_image_training_results import MedicalImageTrainingResults
@@ -24,7 +24,7 @@ class TrainingPipeline:
         validator = DatasetValidator(self.datasource, req_provider=self.req_provider)
         validation_report = validator.run()
         validation_report.print_summary()
-        summarize_invalid_annotation_slices(validation_report)
+        summarize_dataset_validation(validation_report)
 
         if validation_report.has_errors:
             print("Warning: dataset validation contains errors")

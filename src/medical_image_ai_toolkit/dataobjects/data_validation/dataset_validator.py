@@ -49,6 +49,48 @@ class DatasetValidator:
         
         return report
 
+
+def summarize_dataset_validation(report):
+    print("\n=== Dataset Validation Report ===\n")
+
+    grouped = defaultdict(list)
+    severity_counts = {"ERROR": 0, "WARN": 0}
+
+    # Filter + group
+    for issue in report.issues:
+        if issue.level not in ("ERROR", "WARN"):
+            continue
+
+        tag = issue.requirement_tag or "unclassified"
+        grouped[tag].append(issue)
+
+        if issue.level in severity_counts:
+            severity_counts[issue.level] += 1
+
+    if not grouped:
+        print("No WARN or ERROR issues found.\n")
+        return
+
+    # Print grouped issues
+    for tag, issues in grouped.items():
+        print(f"--- {tag.upper()} ({len(issues)} issues) ---")
+
+        for issue in issues[:10]:  # truncate for readability
+            ctx = f" | {issue.context}" if issue.context else ""
+            print(f"[{issue.level}] {issue.message}{ctx}")
+
+        if len(issues) > 10:
+            print(f"... +{len(issues) - 10} more")
+
+        print()
+
+    # Severity summary (very useful for CI / quick scan)
+    print("=== Severity Summary ===")
+    print(f"ERROR: {severity_counts['ERROR']}")
+    print(f"WARN : {severity_counts['WARN']}")
+    print("\n=== End Dataset Validation Report ===\n")
+    
+    
 def summarize_invalid_annotation_slices(report):
     """
     Extract and group invalid annotation slice warnings into a compact summary,
