@@ -46,6 +46,13 @@ class TrainingPipeline:
         trainer.sanity_check()
 
         results = trainer.train()
+        
+        # 4. Export results
+        model_path = results.run_dir / "model.pt"
+
+        results.export_model(model_path)
+        results.artifacts["model"] = model_path
+        report_path = results.generate_training_report()
 
         print("\n=== PIPELINE COMPLETE ===")
 
