@@ -2,8 +2,8 @@ metadata:
   project: medical_image_ai_toolkit
   version: 1.0
   description: >
-    Deterministic medical image AI training toolkit designed to
-    demonstrate regulated software engineering principles.
+    Reusable medical imaging AI infrastructure with explicit contracts,
+    deterministic behavior, and lightweight verification support.
 
 
 requirements:
@@ -15,72 +15,62 @@ requirements:
   - id: DAT-001
     title: Patient Sample Structure Validation
     description: >
-      PatientSample objects shall be structurally validated against
-      dimensional, spacing, and identifier constraints via an
-      enforceable contract.
+      Patient-level data objects shall be validated for required
+      structure, identifiers, and basic spatial metadata before use.
 
   - id: DAT-002
     title: Annotation Structure Compliance
     description: >
-      Annotation objects shall expose either:
-        (a) a dense mask array, or
-        (b) a vector_rois dictionary mapping slice indices to lists of
-            VectorROI objects containing (N,2) pixel contours.
+      Annotation data shall follow a defined structure so training and
+      validation code can consume it consistently.
 
   - id: DAT-003
     title: Annotation Boundary Validation
     description: >
-      VectorROI contour coordinates and slice indices shall be validated
-      against the associated patient volume bounds via contract enforcement.
+      Annotation coordinates and slice references shall be checked
+      against the associated image volume bounds.
 
   - id: DAT-004
     title: Patient Sample Boundary Validation
     description: >
-      Patient sample accessors shall prevent out-of-bounds indexing and
-      raise defined exceptions when invalid indices are requested.
+      Dataset access APIs shall reject out-of-bounds requests with
+      defined exceptions.
 
   - id: DAT-005
     title: Patient Sample To Tensor Conversion
     description: >
-      PatientSample objects shall support deterministic conversion to
-      2D and 3D tensors while preserving spatial metadata.
+      The toolkit shall support deterministic derivation of model-ready
+      inputs from patient-level imaging data.
 
   - id: DAT-006
     title: Patient Indexing without Loading
     description: >
-      Dataset implementations shall support enumeration of patient
-      identifiers without loading full image volumes into memory.
+      Datasets shall support enumeration of patient identifiers without
+      requiring full dataset materialization in memory.
 
   - id: DAT-007
     title: Dataset Partition Generation
     description: >
-      The system shall support generation of training, validation,
-      and test dataset partitions from a dataset according to a
-      specified partition strategy.
+      The toolkit shall support generation of train, validation, and
+      test partitions from a dataset using an external split strategy.
 
   - id: DAT-008
     title: Deterministic Dataset Partitioning
     description: >
-      Dataset partitions generated using identical input datasets,
-      configuration parameters, and random seeds shall produce
-      identical partition assignments.
+      Partition generation shall be deterministic for identical inputs
+      and split configuration.
   
   - id: DAT-009
     title: Training Tensor Extraction
     description: >
-      Dataset ingestor implementations shall expose a deterministic
-      interface for converting dataset samples into aligned training
-      input and target tensors (X, Y). The returned tensors shall
-      maintain consistent dimensional ordering and shall represent
-      the learning task defined by the dataset.
+      Project-specific code shall be able to expose aligned training
+      inputs and targets through stable dataset-facing interfaces.
     
   - id: DAT-010
     title: Slice-Level Training Data Exposure
     description: >
-      Dataset ingestors may expose slice-level training samples derived
-      from volumetric patient data. When slice-level training is used,
-      the ingestor shall return aligned input and target tensors for
-      each slice while maintaining patient-level dataset partitioning.
+      When slice-level training is used, derived samples shall remain
+      aligned with their patient-level dataset membership.
 
   # ==============================
   # System-Level Requirements
@@ -89,28 +79,26 @@ requirements:
   - id: SYS-001
     title: Dataset Interface Consistency
     description: >
-      All dataset implementations shall expose a consistent callable 
-      interface supporting indexed sample retrieval.
+      Dataset implementations shall expose a consistent interface for
+      enumerating and retrieving patient data.
 
   - id: SYS-002
     title: Training Pipeline Orchestration
     description: >
-      The system shall support orchestration of dataset preparation,
-      model training, and model evaluation as part of a training run.
+      The toolkit shall support orchestration of dataset preparation,
+      training, and follow-on evaluation workflows.
 
   - id: SYS-003
     title: Pipeline Configuration Interface
     description: >
-      Training pipeline behavior shall be configurable through
-      externally supplied configuration parameters.
+      Training behavior shall be controlled through externally supplied
+      configuration rather than hard-coded project policy.
   
   - id: SYS-004
     title: Training Result Aggregation
     description: >
-      The system shall return a structured results object
-      containing references to training artifacts,
-      evaluation metrics, and model artifacts generated
-      during a training run.
+      Training and validation workflows shall return structured results
+      objects describing generated artifacts and recorded metrics.
   
   # ==============================
   # Training Requirements
@@ -119,59 +107,51 @@ requirements:
   - id: TRN-001
     title: Configurable Training Execution
     description: >
-      Training workflows shall accept externally defined model
-      architectures, loss functions, optimizers, and hyperparameters
-      through a training configuration object without modification to
-      the core training logic.
+      Training workflows shall accept externally supplied models,
+      task definitions, optimizers, and hyperparameters.
 
   - id: TRN-002
     title: Hyperparameter Sweep Support
     description: >
-      The system shall support structured execution of multiple training 
-      runs across defined hyperparameter configurations.
+      The toolkit shall allow repeated training execution across
+      multiple external configurations.
   
   - id: TRN-003
     title: Training Shall Detect Nan Loss
     description: >
-      Training workflows shall detect NaN loss values during optimization and 
-      terminate execution with a defined exception.
+      Training workflows shall detect non-finite optimization loss and
+      fail with a defined exception.
 
   - id: TRN-004
     title: Training Run Artifact Generation
     description: >
-      Each training run shall generate structured artifacts
-      describing the configuration parameters, dataset partitions,
-      random seeds, and resulting model artifacts.
+      Each training run shall generate structured artifacts capturing
+      the run outcome and the artifacts produced.
 
   - id: TRN-005
     title: Training Checkpoint Support
     description: >
-      The system shall support persistence of intermediate
-      model states during training execution.
+      The toolkit shall support persistence of training state during
+      execution when a project requires it.
 
   - id: TRN-006
     title: Deterministic Training Initialization
     description: >
-      Model initialization during training shall be reproducible
-      when executed with identical configuration parameters
-      and random seeds.
+      Training initialization shall be reproducible when configuration,
+      inputs, and random seeds are held constant.
   
   - id: TRN-007
     title: Loss Function Configuration
     description: >
-      The training configuration shall define the loss function used
-      during model optimization. The training workflow shall compute
-      optimization loss using this configured loss function applied
-      to the model outputs and dataset targets.
+      Training shall compute optimization loss from the task definition
+      associated with the current workflow.
   
   - id: TRN-008
     title: Training Input Interface
     description: >
-      Training workflows shall obtain model inputs and targets through
-      the dataset datasource interface. Each retrieved sample shall
-      return aligned input and target arrays that can be iterated
-      during training without additional dataset-specific logic in
-      the trainer implementation.
+      Training workflows shall consume aligned inputs and targets
+      through stable task and dataset interfaces rather than embedding
+      dataset-specific logic in the trainer.
       
   # ==============================
   # Model Requirements
@@ -180,38 +160,37 @@ requirements:
   - id: MOD-001
     title: Model Optimization Support
     description: >
-      The system shall support model training using gradient-based optimization 
-      methods configurable via external parameters.
+      The toolkit shall support gradient-based model optimization using
+      externally configured training components.
 
   - id: MOD-002
     title: Artifact Immutability
     description: >
-      Persisted training artifacts shall not be modified after initial write and 
-      shall be uniquely versioned per training run.
+      Persisted run artifacts shall be written as distinct run outputs
+      rather than in-place mutable state.
   
   - id: MOD-003
     title: Model Artifact Persistence
     description: >
-      The system shall support persistence of trained model
-      artifacts in a format suitable for later loading.
+      The toolkit shall support persistence of trained model artifacts.
 
   - id: MOD-004
     title: Model Artifact Loading
     description: >
-      The system shall support loading previously persisted
-      model artifacts for evaluation or further training.
+      Persisted model artifacts shall be usable by downstream
+      evaluation or continued training workflows.
   
   - id: MOD-005
     title: Model Export Support
     description: >
-      The system shall support export of trained model artifacts
-      in a format suitable for inference or deployment.
+      The toolkit shall support export of trained model artifacts in a
+      defined serialized form.
 
   - id: MOD-006
     title: Inference Execution Support
     description: >
-      The system shall support execution of model inference
-      on new input data using a persisted model artifact.
+      The toolkit shall support inference execution against trained
+      model state on new input data.
 
   # ==============================
   # Verification and Documentation Requirements
@@ -220,43 +199,42 @@ requirements:
   - id: VER-001
     title: Deterministic Training Behavior
     description: >
-      Repeated training runs with identical input data, configuration, and random 
-      seeds shall produce identical recorded metrics.
+      Repeated training runs with identical inputs, configuration, and
+      random seeds shall produce identical recorded metrics.
 
   - id: VER-002
     title: Training Metrics Recording
     description: >
-      Training workflows shall record structured per-epoch metrics including loss 
-      and any configured evaluation metrics.
+      Training workflows shall record structured metrics for the run.
 
   - id: VER-003
     title: Dataset Separation Enforcement
     description: >
-      Training and validation datasets shall contain no overlapping sample identifiers.
+      Distinct dataset partitions shall not overlap in sample identity.
   
   - id: VER-004
     title: Model Evaluation Execution
     description: >
-      The system shall support execution of model evaluation
-      workflows using a specified dataset partition.
+      The toolkit shall support evaluation workflows over a specified
+      dataset partition.
 
   - id: VER-005
     title: Evaluation Metric Recording
     description: >
-      Model evaluation workflows shall record structured
-      evaluation metrics associated with the evaluated model artifact.
+      Evaluation workflows shall record structured metrics associated
+      with the evaluated model state.
   
   - id: VER-006
     title: Post-Training Validation Support
     description: >
-      The system shall support execution of validation
-      workflows on trained models using held-out datasets.
+      The toolkit shall support post-training validation on held-out
+      data using trained models.
 
   - id: VER-007
     title: Inference Consistency Verification
     description: >
-      Repeated inference executions using identical model
-      artifacts and input data shall produce identical outputs.
+      Repeated inference with identical model state and inputs shall
+      produce identical outputs.
 
 # ==============================
 # Documentation Requirements
@@ -265,29 +243,25 @@ requirements:
   - id: DOC-001
     title: Machine-Readable Requirements Definition
     description: >
-      The project shall include a machine-readable
-      requirements.yaml file defining system requirements.
+      The project shall include a machine-readable requirements file.
     tags: [documentation]
 
   - id: DOC-002
     title: Basic Project Documentation
     description: >
-      The project shall include a README file describing
-      system purpose, configuration, and execution steps.
+      The project shall include a short README describing purpose,
+      boundaries, and intended use.
     tags: [documentation]
 
   - id: DOC-003
     title: Training Workflow Documentation
     description: >
-      Project documentation shall describe the expected workflow
-      for dataset preparation, model training, and evaluation
-      using the toolkit.
+      Project documentation shall describe the intended role of the
+      toolkit without duplicating implementation detail.
     tags: [documentation]
 
   - id: DOC-004
     title: Training Report Generation
     description: >
-      The system shall support generation of a structured
-      training report summarizing training configuration,
-      dataset partitions, model artifacts, and evaluation metrics.
+      The toolkit shall support generation of structured run reports.
     tags: [documentation]

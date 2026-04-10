@@ -1,40 +1,48 @@
 # Medical Image AI Toolkit
 
-Engineering infrastructure for developing medical imaging AI systems
-under structured SaMD design principles.
+Reusable building blocks for medical imaging AI projects developed with
+determinism, explicit contracts, and lightweight traceability in mind.
 
-This is a learning project.
+This is an engineering demonstration, not a clinical product.
 
----
+## Mission
 
-## Purpose
+This module exists to provide a small, reusable core for:
 
-This repository provides reusable infrastructure for:
+- patient-level data contracts
+- lazy dataset access and partitioning
+- task-driven training orchestration
+- post-training validation
+- structured result artifacts
 
-- deterministic dataset construction
-- image ingestion pipelines
-- experiment reproducibility
-- structured validation
-- artifact generation
+Project-specific behavior should live outside the toolkit wherever
+possible. The toolkit should define stable seams, not project-specific
+policy.
 
-It is designed for projects developed under **SaMD-style engineering practices**.
+## Scope
 
----
+The toolkit is intentionally lightweight. It is meant to support:
 
-## Repository Structure
+- clear interfaces between data, tasks, training, and validation
+- deterministic behavior when configuration and inputs are fixed
+- machine-readable requirements and test traceability
 
-```
-medical_image_ai_toolkit/
-├── src/
-│ └── medical_image_ai_toolkit/
-├── docs/
-│ └── requirements.yaml
-├── tests/
-├── environment.yml
-└── README.md
-```
+It is not meant to be a full framework or to carry project-specific
+clinical logic.
 
+## Repository Layout
 
----
+- `src/medical_image_ai_toolkit/`: reusable contracts, training, validation, and results code
+- `docs/requirements.yaml`: stable behavioral requirements for the toolkit
+- `tests/`: executable verification of those requirements
 
-Requirements follow the convention defined in regulatory_tools/docs/Requirements_Convention.md
+## Documentation Approach
+
+The primary documentation for this module is:
+
+- this README for mission and boundaries
+- `docs/requirements.yaml` for behavioral expectations
+- tests for executable examples of intended behavior
+
+Requirements follow the convention defined in
+`regulatory_tools/docs/Requirements_Convention.md`.
