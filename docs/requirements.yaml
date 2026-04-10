@@ -99,6 +99,12 @@ requirements:
     description: >
       Training and validation workflows shall return structured results
       objects describing generated artifacts and recorded metrics.
+
+  - id: SYS-005
+    title: Explicit Dataset Validation
+    description: >
+      The toolkit shall support explicit dataset validation and
+      structured validation reporting before model training proceeds.
   
   # ==============================
   # Training Requirements
