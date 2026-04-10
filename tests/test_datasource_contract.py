@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from regulatory_tools.evidence.evidence_report import EvidenceReport
+from medical_image_ai_toolkit.dataobjects.annotation_bundle import AnnotationBundle, VectorROI
 from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import MedicalImageDataSource
 
 
@@ -17,6 +18,23 @@ class DummyPatient:
         self.annotations = None
 
 
+class AnnotatedDummyPatient(DummyPatient):
+
+    def __init__(self):
+        super().__init__()
+        contour = np.array(
+            [
+                [1, 1],
+                [4, 1],
+                [4, 4],
+                [1, 4],
+            ],
+            dtype=np.float32,
+        )
+        roi = VectorROI(slice_index=2, contour_px=contour, label="lesion")
+        self.annotations = AnnotationBundle(vector_rois={2: [roi]})
+
+
 class DummyIngestor:
 
     def __init__(self):
@@ -27,6 +45,18 @@ class DummyIngestor:
 
     def load_patient_sample(self, patient_id):
         return DummyPatient()
+
+
+class AnnotatedDummyIngestor(DummyIngestor):
+
+    def load_patient_sample(self, patient_id):
+        return AnnotatedDummyPatient()
+
+
+class SampleAwareIngestor(DummyIngestor):
+
+    def get_sample(self, patient_id):
+        return ("custom", patient_id)
 
 
 class DummyPartitionStrategy:
@@ -239,6 +269,63 @@ def test_show_slice_basic(tmp_path, evidence_output_dir):
         ds.show_slice("P0", block = False)
 
     report.auto_save("DAT004_show_slice_basic", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("DAT-004")
+@pytest.mark.requirement("DAT-010")
+def test_show_slice_with_annotations_and_custom_get_sample(
+    tmp_path,
+    evidence_output_dir,
+    monkeypatch,
+):
+
+    report = EvidenceReport(subject="Datasource visualization and custom sample access")
+
+    monkeypatch.setattr(
+        "medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource.plt.show",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource.plt.close",
+        lambda *args, **kwargs: None,
+    )
+
+    sample_ds = MedicalImageDataSource(tmp_path, SampleAwareIngestor())
+    sample = sample_ds.get_sample("P2")
+
+    if sample != ("custom", "P2"):
+        report.error("Datasource did not delegate to ingestor.get_sample", "DAT-010")
+
+    annotated_ds = MedicalImageDataSource(tmp_path, AnnotatedDummyIngestor())
+
+    try:
+        annotated_ds.show_slice(
+            "P0",
+            slice_index=2,
+            cols=1,
+            show_annotations=True,
+            show_bboxes=True,
+            block=True,
+        )
+        annotated_ds.show_slice(
+            "P0",
+            slice_range=(1, 3),
+            cols=1,
+            show_annotations=True,
+            show_bboxes=True,
+            block=False,
+        )
+    except Exception as exc:
+        report.error(f"Annotated visualization raised unexpected exception: {exc}", "DAT-004")
+
+    no_annotation_ds = MedicalImageDataSource(tmp_path, DummyIngestor())
+    no_annotation_ds.show_slice("P0", annotated_only=True, block=False)
+
+    report.auto_save(
+        "DAT004_DAT010_datasource_visualization_and_custom_sample",
+        evidence_output_dir,
+    )
     assert not report.has_errors, report.summary()
     
 @pytest.mark.requirement("DAT-008")
