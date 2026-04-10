@@ -21,12 +21,12 @@ class TrainingPipeline:
 
         # 1. Validate dataset
         print("\nValidating dataset...")
-        validator = DatasetValidator(self.datasource, req_provider=self.req_provider)
-        validation_report = validator.run()
-        validation_report.print_summary()
-        summarize_dataset_validation(validation_report)
+        ds_validator = DatasetValidator(self.datasource, req_provider=self.req_provider)
+        ds_validation_report = ds_validator.run()
+        ds_validation_report.print_summary()
+        summarize_dataset_validation(ds_validation_report)
 
-        if validation_report.has_errors:
+        if ds_validation_report.has_errors:
             print("Warning: dataset validation contains errors")
 
         # 2. Partition
@@ -57,6 +57,6 @@ class TrainingPipeline:
         print("\n=== PIPELINE COMPLETE ===")
 
         return {
-            "validation": validation_report,
+            "dataset_validation": ds_validation_report,
             "results": results,
         }

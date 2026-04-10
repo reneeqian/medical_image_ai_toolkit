@@ -70,12 +70,13 @@ class MedicalImageTrainingResults:
 
         report = {
             "metrics": self.metrics,
+            "datasource": vars(self.datasource),
             "config": vars(self.config),
             "history": self.history
         }
 
         with open(report_path, "w") as f:
-            json.dump(report, f, indent=2)
+            json.dump(report, f, indent=2, default=str)
 
         return report_path
 
