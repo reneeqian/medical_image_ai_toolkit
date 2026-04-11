@@ -385,3 +385,40 @@ def test_results_artifact_registration(tmp_path, evidence_output_dir):
         evidence_output_dir
     )
     assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("DOC-004")
+def test_training_run_records_lifecycle_timestamps(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Training lifecycle timestamps are recorded")
+
+    ds = MedicalImageDataSource(tmp_path, SyntheticIngestor())
+    ds.create_partitions(DeterministicSplit())
+
+    model = TinyConvNet()
+    config = TrainingConfig(
+        epochs=1,
+        task=DummyTask()
+    )
+
+    trainer = MedicalImageTrainer(ds, model, config)
+    results = trainer.train()
+
+    if results.training_start_time is None:
+        report.error("Training start time was not recorded", "DOC-004")
+
+    if results.training_end_time is None:
+        report.error("Training end time was not recorded", "DOC-004")
+
+    if (
+        results.training_start_time is not None
+        and results.training_end_time is not None
+        and results.training_end_time < results.training_start_time
+    ):
+        report.error("Training lifecycle timestamps are out of order", "DOC-004")
+
+    report.auto_save(
+        "DOC004_training_lifecycle_timestamps",
+        evidence_output_dir
+    )
+    assert not report.has_errors, report.summary()

@@ -27,7 +27,10 @@ class TrainingPipeline:
         summarize_dataset_validation(ds_validation_report)
 
         if ds_validation_report.has_errors:
-            print("Warning: dataset validation contains errors")
+            raise RuntimeError(
+                "Dataset validation failed; aborting training pipeline.\n"
+                f"{ds_validation_report.to_string()}"
+            )
 
         # 2. Partition
         print("\nPartitioning dataset...")

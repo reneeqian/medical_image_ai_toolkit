@@ -66,6 +66,7 @@ class MedicalImageTrainer:
             self.datasource,
             run_dir
         )
+        results.training_start_time = datetime.now()
 
         print("Starting training")
         

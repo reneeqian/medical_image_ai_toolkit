@@ -8,6 +8,7 @@ import pytest
 from medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
 from medical_image_ai_toolkit.dataobjects.annotation_bundle import AnnotationBundle, VectorROI
 from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import MedicalImageDataSource
+from medical_image_ai_toolkit.pipeline.training_pipeline import TrainingPipeline
 from medical_image_ai_toolkit.training.medical_image_trainer import MedicalImageTrainer
 from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
 from medical_image_ai_toolkit.training.training_config import TrainingConfig
@@ -535,3 +536,44 @@ def test_training_with_no_patients(tmp_path, evidence_output_dir):
     )
     assert not report.has_errors, report.summary()
 
+
+@pytest.mark.requirement("SYS-005")
+def test_training_pipeline_stops_on_dataset_validation_errors(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Training pipeline should stop on dataset validation errors")
+
+    class InvalidIngestor:
+        def list_patient_ids(self):
+            return ["P0"]
+
+        def load_patient_sample(self, patient_id):
+            return PatientSample(
+                image_volume=np.zeros((8, 16, 16), dtype=np.float32),
+                spacing=(1.0, -1.0, 1.0),
+                annotations=None,
+                patient_id=patient_id,
+                metadata={},
+            )
+
+    ds = MedicalImageDataSource(tmp_path, InvalidIngestor())
+
+    config = TrainingConfig(
+        epochs=1,
+        task=DummyTask(),
+        split_strategy=DeterministicSplit(),
+    )
+
+    pipeline = TrainingPipeline(
+        datasource=ds,
+        model=TinyConvNet(),
+        config=config,
+    )
+
+    with pytest.raises(RuntimeError, match="Dataset validation failed"):
+        pipeline.run()
+
+    report.auto_save(
+        "SYS005_training_pipeline_stops_on_invalid_dataset",
+        evidence_output_dir
+    )
+    assert not report.has_errors, report.summary()
