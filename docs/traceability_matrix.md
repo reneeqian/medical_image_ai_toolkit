@@ -4,11 +4,11 @@
 
 ## Requirement Coverage
 
-**Coverage:** 87.5% (35 / 40 requirements tested)
+**Coverage:** 90.0% (36 / 40 requirements tested)
 
 ## Code Coverage
 
-**Line Coverage:** 85.6%
+**Line Coverage:** 85.3%
 
 Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 
@@ -43,16 +43,16 @@ Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 | TRN-002 | Hyperparameter Sweep Support |  |  | UNTESTED |
 | TRN-003 | Training Shall Detect Nan Loss | tests/test_medical_image_trainer.py::test_training_detects_nan_loss |  | LINKED |
 | TRN-004 | Training Run Artifact Generation | tests/test_medical_image_trainer.py::test_training_pipeline_generates_artifacts |  | LINKED |
-| TRN-005 | Training Checkpoint Support |  |  | UNTESTED |
+| TRN-005 | Training Checkpoint Support | tests/test_medical_image_trainer.py::test_early_stop_disabled_runs_all_epochs, tests/test_medical_image_trainer.py::test_early_stop_loss_threshold_halts_training, tests/test_medical_image_trainer.py::test_early_stop_plateau_halts_training, tests/test_training_config.py::test_training_config_early_stop_can_be_disabled, tests/test_training_config.py::test_training_config_early_stop_custom_values, tests/test_training_config.py::test_training_config_early_stop_defaults |  | LINKED |
 | TRN-006 | Deterministic Training Initialization | tests/test_medical_image_trainer.py::test_training_is_deterministic |  | LINKED |
 | TRN-007 | Loss Function Configuration | tests/test_task_definition.py::test_task_compute_loss, tests/test_training_config.py::test_training_config_uses_task_loss_interface |  | LINKED |
 | TRN-008 | Training Input Interface | tests/test_task_definition.py::test_postprocess_prediction_identity, tests/test_task_definition.py::test_task_generates_aligned_samples |  | LINKED |
-| VER-001 | Deterministic Training Behavior | tests/test_medical_image_trainer.py::test_training_is_deterministic |  | LINKED |
+| VER-001 | Deterministic Training Behavior | tests/test_deterministic_split.py::test_different_seeds_produce_different_splits, tests/test_deterministic_split.py::test_split_is_deterministic, tests/test_medical_image_trainer.py::test_training_is_deterministic |  | LINKED |
 | VER-002 | Training Metrics Recording | tests/test_medical_image_trainer.py::test_training_pipeline_generates_artifacts, tests/test_training_results.py::test_training_results_artifact_generation |  | LINKED |
-| VER-003 | Dataset Separation Enforcement | tests/test_datasource_contract.py::test_dataset_partition_generation, tests/test_medical_image_trainer.py::test_dataset_partitions_do_not_overlap |  | LINKED |
+| VER-003 | Dataset Separation Enforcement | tests/test_datasource_contract.py::test_dataset_partition_generation, tests/test_deterministic_split.py::test_split_covers_all_patients, tests/test_deterministic_split.py::test_split_max_caps_are_respected, tests/test_deterministic_split.py::test_split_on_minimal_patient_count, tests/test_deterministic_split.py::test_split_partitions_are_non_overlapping, tests/test_medical_image_trainer.py::test_dataset_partitions_do_not_overlap |  | LINKED |
 | VER-004 | Model Evaluation Execution | tests/test_validation_pipeline.py::test_validation_pipeline_generates_metrics_and_report, tests/test_validation_pipeline.py::test_validation_pipeline_requires_existing_partitions |  | LINKED |
 | VER-005 | Evaluation Metric Recording | tests/test_validation_pipeline.py::test_segmentation_evaluator_records_counts_and_reset, tests/test_validation_pipeline.py::test_validation_pipeline_generates_metrics_and_report |  | LINKED |
-| VER-006 | Post-Training Validation Support | tests/test_validation_pipeline.py::test_validation_pipeline_generates_metrics_and_report, tests/test_validation_pipeline.py::test_validation_pipeline_requires_task_definition, tests/test_validation_pipeline.py::test_validation_pipeline_supports_custom_evaluator |  | LINKED |
+| VER-006 | Post-Training Validation Support | tests/test_validation_pipeline.py::test_validation_pipeline_generate_figures_false_skips_figures, tests/test_validation_pipeline.py::test_validation_pipeline_generate_figures_true_creates_files, tests/test_validation_pipeline.py::test_validation_pipeline_generates_metrics_and_report, tests/test_validation_pipeline.py::test_validation_pipeline_requires_task_definition, tests/test_validation_pipeline.py::test_validation_pipeline_supports_custom_evaluator |  | LINKED |
 | VER-007 | Inference Consistency Verification | tests/test_training_results.py::test_inference_determinism |  | LINKED |
 
 
@@ -64,12 +64,11 @@ Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 - MOD-002
 - MOD-004
 - TRN-002
-- TRN-005
 
 
 ---
 Total Requirements: 40
 
-Tested: 35
+Tested: 36
 
 Failures: 0

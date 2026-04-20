@@ -43,6 +43,7 @@ class MedicalImageValidationResults:
         self.metrics: dict = {}
         self.per_patient_results: list = []
         self.artifacts: dict = {}
+        self.sample_viz_data: list = []   # populated by ValidationPipeline for figure generation
 
         # lifecycle timestamps
         self.validation_start_time: datetime | None = None

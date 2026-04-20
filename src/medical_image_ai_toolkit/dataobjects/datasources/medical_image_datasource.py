@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import List
+import json
 import matplotlib.pyplot as plt
 import numpy as np
 import math
@@ -128,7 +129,114 @@ class MedicalImageDataSource:
             and self.val_ids is not None
             and self.test_ids is not None
         )
-        
+
+    def save_partitions(self, run_dir: Path) -> Path:
+        """
+        Write the current partition assignment to ``run_dir/partitions.json``.
+
+        Called by the training pipeline immediately after training so
+        that the validation pipeline can reload the exact same split
+        without re-running the split strategy.
+
+        Parameters
+        ----------
+        run_dir : Path
+            Directory to write into.  Must already exist.
+
+        Returns
+        -------
+        Path
+            Absolute path of the written file.
+
+        Raises
+        ------
+        RuntimeError
+            If partitions have not been created yet.
+        """
+        if not self.has_partitions():
+            raise RuntimeError(
+                "Partitions have not been created. "
+                "Call create_partitions() before save_partitions()."
+            )
+
+        path = Path(run_dir) / "partitions.json"
+
+        with open(path, "w") as f:
+            json.dump(
+                {
+                    "train_ids": self.train_ids,
+                    "val_ids":   self.val_ids,
+                    "test_ids":  self.test_ids,
+                },
+                f,
+                indent=2,
+            )
+
+        print(f"Partitions saved to: {path}")
+        return path
+
+    @classmethod
+    def load_partitions(cls, datasource: "MedicalImageDataSource", path: Path) -> "MedicalImageDataSource":
+        """
+        Restore partition assignments from a ``partitions.json`` file
+        onto an existing datasource instance.
+
+        Every patient ID in the file is validated against the
+        datasource's known population before being applied, so a
+        dataset mismatch is caught immediately rather than silently
+        producing wrong test results.
+
+        Parameters
+        ----------
+        datasource : MedicalImageDataSource
+            An already-constructed datasource whose ingestor points at
+            the same dataset that was used during training.
+        path : Path
+            Path to the ``partitions.json`` written by ``save_partitions()``.
+
+        Returns
+        -------
+        MedicalImageDataSource
+            The same ``datasource`` instance with train/val/test IDs populated.
+
+        Raises
+        ------
+        FileNotFoundError
+            If ``path`` does not exist.
+        ValueError
+            If any saved patient ID is absent from the current datasource.
+        """
+        path = Path(path)
+
+        if not path.exists():
+            raise FileNotFoundError(f"Partition file not found: {path}")
+
+        with open(path) as f:
+            payload = json.load(f)
+
+        known = set(datasource.patient_ids)
+        for split in ("train_ids", "val_ids", "test_ids"):
+            for pid in payload[split]:
+                if pid not in known:
+                    raise ValueError(
+                        f"Saved partition references patient '{pid}' which is "
+                        f"not present in the current datasource. Ensure the "
+                        f"datasource points at the same dataset used during training."
+                    )
+
+        datasource.train_ids = payload["train_ids"]
+        datasource.val_ids   = payload["val_ids"]
+        datasource.test_ids  = payload["test_ids"]
+
+        print(f"Partitions loaded from: {path}")
+        print(
+            f"  train={len(datasource.train_ids)}  "
+            f"val={len(datasource.val_ids)}  "
+            f"test={len(datasource.test_ids)}"
+        )
+
+        return datasource
+
     # ---------------------------------------------------------
     # Visualization APIs
     # ---------------------------------------------------------
@@ -274,4 +382,3 @@ class MedicalImageDataSource:
     def __getitem__(self, idx: int):
         patient_id = self.patient_ids[idx]
         return self.get_patient(patient_id)
-    

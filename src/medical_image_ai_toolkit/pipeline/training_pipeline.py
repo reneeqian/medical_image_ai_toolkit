@@ -9,11 +9,12 @@ from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefini
 
 class TrainingPipeline:
 
-    def __init__(self, datasource, model, config, req_provider=None):
+    def __init__(self, datasource, model, config, req_provider=None, output_dir=None):
         self.datasource = datasource
         self.model = model
         self.config = config
         self.req_provider = req_provider
+        self.output_dir = output_dir
 
     def run(self):
 
@@ -43,7 +44,8 @@ class TrainingPipeline:
         trainer = MedicalImageTrainer(
             self.datasource,
             self.model,
-            self.config
+            self.config,
+            output_dir=self.output_dir,
         )
         
         trainer.sanity_check()
@@ -55,6 +57,8 @@ class TrainingPipeline:
 
         results.export_model(model_path)
         results.artifacts["model"] = model_path
+        partitions_path = self.datasource.save_partitions(results.run_dir)
+        results.artifacts["partitions"] = partitions_path
         report_path = results.generate_training_report()
 
         print("\n=== PIPELINE COMPLETE ===")

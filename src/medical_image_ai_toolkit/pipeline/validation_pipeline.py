@@ -1,3 +1,4 @@
+import random as _random
 from datetime import datetime
 from pathlib import Path
 
@@ -8,6 +9,11 @@ from medical_image_ai_toolkit.training.training_config import TrainingConfig
 from medical_image_ai_toolkit.validation.base_evaluator import BaseEvaluator
 from medical_image_ai_toolkit.validation.segmentation_evaluator import SegmentationEvaluator
 from medical_image_ai_toolkit.results.medical_image_validation_results import MedicalImageValidationResults
+from medical_image_ai_toolkit.visualizations.validation_figures import (
+    plot_training_curve,
+    plot_confusion_matrix,
+    plot_patient_samples,
+)
 
 
 class ValidationPipeline:
@@ -67,6 +73,8 @@ class ValidationPipeline:
         evaluator: BaseEvaluator = None,
         partitions_path=None,
         output_dir=None,
+        training_history: list = None,
+        generate_figures: bool = True,
     ):
         self.datasource = datasource
         self.model = model
@@ -76,6 +84,8 @@ class ValidationPipeline:
 
         self.output_dir = Path(output_dir or "artifacts/validation_runs")
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.training_history = training_history
+        self.generate_figures = generate_figures
 
     # ---------------------------------------------------------
     # Public API
@@ -143,6 +153,11 @@ class ValidationPipeline:
         total_loss = 0.0
         total_samples = 0
 
+        # Select up to 3 random patients for visualization (seeded for reproducibility)
+        n_viz = min(3, len(test_ids))
+        viz_ids = set(_random.Random(42).sample(test_ids, n_viz))
+        _viz_best = {}   # pid -> (score, slice_idx, hu, gt_mask, pred_prob)
+
         print("\nRunning inference on test patients...")
 
         with torch.no_grad():
@@ -158,6 +173,7 @@ class ValidationPipeline:
                 patient_evaluator = self._make_patient_evaluator()
                 patient_evaluator.reset()
 
+                _slice_idx = 0
                 for sample in task.generate_training_samples(patient_sample):
 
                     x = sample["input"].to(device)
@@ -177,6 +193,21 @@ class ValidationPipeline:
 
                     # Patient-scoped evaluator — produces per-patient metrics
                     patient_evaluator.update(pred, y)
+
+                    # Capture best slice for visualization (prefer annotated slices)
+                    if patient_id in viz_ids:
+                        gt_sum = float(y.sum().item())
+                        pred_prob = torch.sigmoid(pred).squeeze().cpu().detach().numpy()
+                        score = gt_sum if gt_sum > 0 else pred_prob.mean()
+                        if patient_id not in _viz_best or score > _viz_best[patient_id][0]:
+                            _viz_best[patient_id] = (
+                                score,
+                                _slice_idx,
+                                x.squeeze().cpu().numpy(),
+                                y.squeeze().cpu().numpy(),
+                                pred_prob,
+                            )
+                    _slice_idx += 1
 
                 per_patient_loss = (
                     patient_loss / patient_samples if patient_samples > 0 else None
@@ -214,9 +245,22 @@ class ValidationPipeline:
 
         results.mark_validation_complete()
 
-        # 6. Export artefacts
+        # 6. Populate viz data
+        for pid, (_, slice_idx, hu, gt_mask, pred_prob) in _viz_best.items():
+            results.sample_viz_data.append({
+                "patient_id": pid,
+                "slice_idx":  slice_idx,
+                "hu":         hu,
+                "gt_mask":    gt_mask,
+                "pred":       pred_prob,
+            })
+
+        # 7. Export artefacts
         report_path = results.generate_validation_report()
         results.artifacts["validation_report"] = report_path
+
+        if self.generate_figures:
+            results.artifacts.update(self._generate_figures(results, run_dir))
 
         results.summary()
 
@@ -227,6 +271,33 @@ class ValidationPipeline:
     # ---------------------------------------------------------
     # Internal helpers
     # ---------------------------------------------------------
+
+    def _generate_figures(self, results, run_dir: Path) -> dict:
+        artifacts = {}
+        try:
+            if self.training_history:
+                p = plot_training_curve(self.training_history, run_dir / "training_curve.png")
+                artifacts["training_curve"] = p
+                print(f"Figure saved: {p}")
+        except Exception as e:
+            print(f"Warning: could not generate training curve: {e}")
+
+        try:
+            p = plot_confusion_matrix(results.metrics, run_dir / "confusion_matrix.png")
+            artifacts["confusion_matrix"] = p
+            print(f"Figure saved: {p}")
+        except Exception as e:
+            print(f"Warning: could not generate confusion matrix: {e}")
+
+        try:
+            if results.sample_viz_data:
+                p = plot_patient_samples(results.sample_viz_data, run_dir / "patient_samples.png")
+                artifacts["patient_samples"] = p
+                print(f"Figure saved: {p}")
+        except Exception as e:
+            print(f"Warning: could not generate patient samples figure: {e}")
+
+        return artifacts
 
     def _make_patient_evaluator(self) -> BaseEvaluator:
         """

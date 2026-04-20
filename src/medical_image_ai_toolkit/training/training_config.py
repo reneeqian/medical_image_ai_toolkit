@@ -16,6 +16,10 @@ class TrainingConfig:
             task: TrainingTaskDefinition = None,
             split_strategy = None,
             optimizer: torch.optim.Optimizer = torch.optim.Adam,
+            early_stop: bool = True,
+            loss_threshold: float = 0.01,
+            plateau_patience: int = 5,
+            plateau_min_delta: float = 1e-4,
         ):
 
         self.epochs = epochs
@@ -26,3 +30,7 @@ class TrainingConfig:
         self.task = task
         self.split_strategy = split_strategy
         self.optimizer = optimizer
+        self.early_stop = early_stop
+        self.loss_threshold = loss_threshold
+        self.plateau_patience = plateau_patience
+        self.plateau_min_delta = plateau_min_delta

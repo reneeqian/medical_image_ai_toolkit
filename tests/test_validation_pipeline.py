@@ -226,6 +226,72 @@ def test_segmentation_evaluator_records_counts_and_reset(
 
 
 @pytest.mark.requirement("VER-006")
+def test_validation_pipeline_generate_figures_false_skips_figures(
+    tmp_path,
+    evidence_output_dir,
+):
+
+    report = EvidenceReport(subject="Validation pipeline: generate_figures=False skips figure files")
+
+    datasource = MedicalImageDataSource(tmp_path, ValidationIngestor())
+    datasource.create_partitions(DeterministicSplit())
+
+    pipeline = ValidationPipeline(
+        datasource=datasource,
+        model=IdentityModel(),
+        config=TrainingConfig(device="cpu", task=IdentityTask()),
+        output_dir=tmp_path / "validation_runs",
+        generate_figures=False,
+    )
+
+    results = pipeline.run()
+
+    figure_keys = {"training_curve", "confusion_matrix", "patient_samples"}
+    unexpected = figure_keys & set(results.artifacts.keys())
+    if unexpected:
+        report.error(
+            f"Figure artifacts present despite generate_figures=False: {unexpected}",
+            "VER-006",
+        )
+
+    report.auto_save("VER006_generate_figures_false", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("VER-006")
+def test_validation_pipeline_generate_figures_true_creates_files(
+    tmp_path,
+    evidence_output_dir,
+):
+
+    report = EvidenceReport(subject="Validation pipeline: generate_figures=True creates figure files")
+
+    datasource = MedicalImageDataSource(tmp_path, ValidationIngestor())
+    datasource.create_partitions(DeterministicSplit())
+
+    training_history = [{"epoch": 1, "loss": 0.8}, {"epoch": 2, "loss": 0.5}]
+
+    pipeline = ValidationPipeline(
+        datasource=datasource,
+        model=IdentityModel(),
+        config=TrainingConfig(device="cpu", task=IdentityTask()),
+        output_dir=tmp_path / "validation_runs",
+        generate_figures=True,
+        training_history=training_history,
+    )
+
+    results = pipeline.run()
+
+    for key in ("training_curve", "confusion_matrix"):
+        path = results.artifacts.get(key)
+        if path is None or not path.exists():
+            report.error(f"Expected figure artifact '{key}' not found", "VER-006")
+
+    report.auto_save("VER006_generate_figures_true", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("VER-006")
 def test_validation_pipeline_supports_custom_evaluator(
     tmp_path,
     evidence_output_dir,

@@ -537,6 +537,110 @@ def test_training_with_no_patients(tmp_path, evidence_output_dir):
     assert not report.has_errors, report.summary()
 
 
+@pytest.mark.requirement("TRN-005")
+def test_early_stop_loss_threshold_halts_training(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Early stopping: loss threshold halts training")
+
+    # Task always returns a fixed loss of 0.5 regardless of model output.
+    # Multiply prediction by 0 to keep the grad_fn while holding loss constant.
+    class FixedLossTask(TrainingTaskDefinition):
+        def generate_training_samples(self, patient_sample):
+            yield {"input": torch.zeros(1, 1, 32, 32), "target": torch.zeros(1, 1, 32, 32)}
+        def compute_loss(self, prediction, target):
+            return prediction.mean() * 0.0 + 0.5
+
+    ds = _create_datasource(tmp_path)
+    ds.create_partitions(DeterministicSplit())
+
+    config = TrainingConfig(
+        epochs=10,
+        task=FixedLossTask(),
+        early_stop=True,
+        loss_threshold=1.0,   # 0.5 <= 1.0 → triggers on epoch 1
+        plateau_patience=999,
+    )
+
+    results = MedicalImageTrainer(ds, TinyConvNet(), config).train()
+
+    if results.metrics.get("epochs_trained") != 1:
+        report.error(
+            f"Expected 1 epoch before threshold stop, got {results.metrics.get('epochs_trained')}",
+            "TRN-005",
+        )
+    if "loss_threshold" not in (results.metrics.get("early_stop_reason") or ""):
+        report.error("early_stop_reason does not name loss_threshold", "TRN-005")
+
+    report.auto_save("TRN005_early_stop_loss_threshold", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("TRN-005")
+def test_early_stop_plateau_halts_training(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Early stopping: plateau patience halts training")
+
+    # Task always returns a fixed loss of 1.0 — improvement is always zero.
+    # Multiply prediction by 0 to keep the grad_fn while holding loss constant.
+    class ConstantLossTask(TrainingTaskDefinition):
+        def generate_training_samples(self, patient_sample):
+            yield {"input": torch.zeros(1, 1, 32, 32), "target": torch.zeros(1, 1, 32, 32)}
+        def compute_loss(self, prediction, target):
+            return prediction.mean() * 0.0 + 1.0
+
+    ds = _create_datasource(tmp_path)
+    ds.create_partitions(DeterministicSplit())
+
+    config = TrainingConfig(
+        epochs=20,
+        task=ConstantLossTask(),
+        early_stop=True,
+        loss_threshold=-1.0,   # impossible to reach — ensures only plateau fires
+        plateau_patience=2,
+        plateau_min_delta=1e-4,
+    )
+
+    results = MedicalImageTrainer(ds, TinyConvNet(), config).train()
+
+    # epoch 1: no comparison; epoch 2: no improvement (counter=1); epoch 3: counter=2 >= patience → stop
+    if results.metrics.get("epochs_trained", 20) >= 20:
+        report.error("Training ran to completion despite constant loss (plateau not triggered)", "TRN-005")
+    if "plateau" not in (results.metrics.get("early_stop_reason") or ""):
+        report.error("early_stop_reason does not name plateau", "TRN-005")
+
+    report.auto_save("TRN005_early_stop_plateau", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("TRN-005")
+def test_early_stop_disabled_runs_all_epochs(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Early stopping disabled: all epochs run")
+
+    ds = _create_datasource(tmp_path)
+    ds.create_partitions(DeterministicSplit())
+
+    config = TrainingConfig(
+        epochs=3,
+        task=DummyTask(),
+        early_stop=False,
+    )
+
+    results = MedicalImageTrainer(ds, TinyConvNet(), config).train()
+
+    if results.metrics.get("epochs_trained") != 3:
+        report.error(
+            f"Expected 3 epochs with early_stop=False, got {results.metrics.get('epochs_trained')}",
+            "TRN-005",
+        )
+
+    if results.metrics.get("early_stop_reason") is not None:
+        report.error("early_stop_reason should be None when early_stop=False", "TRN-005")
+
+    report.auto_save("TRN005_early_stop_disabled", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
 @pytest.mark.requirement("SYS-005")
 def test_training_pipeline_stops_on_dataset_validation_errors(tmp_path, evidence_output_dir):
 

@@ -14,7 +14,25 @@ from medical_image_ai_toolkit.results.medical_image_training_results import Medi
 
 class MedicalImageTrainer:
     """
-    Bare-bones training orchestration class.
+    Training orchestration class.
+
+    Early stopping
+    --------------
+    Two independent stopping conditions can be enabled together or separately:
+
+    loss_threshold : float, optional
+        Stop as soon as epoch loss drops at or below this value.
+        Useful when you know the target loss for a task (e.g. 0.05).
+        Controlled by ``early_stop`` flag.
+
+    plateau_patience : int
+        Stop when epoch loss has not improved by more than
+        ``plateau_min_delta`` for this many consecutive epochs.
+        Controlled by ``early_stop`` flag.
+
+    Both conditions are checked at the end of each epoch.  Either one
+    triggers an early exit.  Set ``early_stop=False`` to disable both
+    and always train for the full ``config.epochs``.
     """
 
     def __init__(
@@ -23,7 +41,7 @@ class MedicalImageTrainer:
         model,
         training_config,
         output_dir=None,
-        random_seed=42
+        random_seed=42,
     ):
         self.datasource = datasource
         self.model = model
@@ -68,17 +86,31 @@ class MedicalImageTrainer:
         )
         results.training_start_time = datetime.now()
 
+        early_stop       = self.config.early_stop
+        loss_threshold   = self.config.loss_threshold
+        plateau_patience = self.config.plateau_patience
+        plateau_min_delta = self.config.plateau_min_delta
+
         print("Starting training")
-        
+        if early_stop:
+            print(
+                f"Early stopping ON  |  loss_threshold={loss_threshold}"
+                f"  |  plateau_patience={plateau_patience}"
+                f"  |  plateau_min_delta={plateau_min_delta}"
+            )
+
         self.model.train()
 
         epoch_losses = []
+        epochs_without_improvement = 0
+        stop_reason = None
+
         for epoch in range(self.config.epochs):
 
             print(f"\nEpoch {epoch+1}")
             running_loss = 0.0
             n_samples = 0
-            
+
             task = self.config.task
 
             for patient_id in train_ids:
@@ -118,13 +150,38 @@ class MedicalImageTrainer:
                 "epoch": epoch + 1,
                 "loss": epoch_loss
             })
-            
-            print("epoch complete")
+
+            print(f"epoch complete  |  loss={epoch_loss:.6f}")
+
+            if early_stop:
+                if epoch_loss <= loss_threshold:
+                    stop_reason = f"loss_threshold reached ({epoch_loss:.6f} <= {loss_threshold})"
+                    break
+
+                if len(epoch_losses) >= 2:
+                    improvement = epoch_losses[-2] - epoch_loss
+                    if improvement < plateau_min_delta:
+                        epochs_without_improvement += 1
+                    else:
+                        epochs_without_improvement = 0
+
+                if epochs_without_improvement >= plateau_patience:
+                    stop_reason = (
+                        f"plateau: no improvement > {plateau_min_delta}"
+                        f" for {plateau_patience} consecutive epochs"
+                    )
+                    break
+
+        epochs_trained = len(epoch_losses)
+        if stop_reason:
+            print(f"\nEarly stop after epoch {epochs_trained}: {stop_reason}")
 
         results.metrics = {
             "final_loss": epoch_losses[-1],
+            "epochs_trained": epochs_trained,
             "num_epochs": self.config.epochs,
-            "num_train_samples": len(train_ids)
+            "num_train_samples": len(train_ids),
+            "early_stop_reason": stop_reason,
         }
 
         metrics_path = results.run_dir / "metrics.json"
