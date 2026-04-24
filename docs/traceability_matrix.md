@@ -8,7 +8,7 @@
 
 ## Code Coverage
 
-**Line Coverage:** 85.3%
+**Line Coverage:** 85.7%
 
 Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 
@@ -50,9 +50,9 @@ Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 | VER-001 | Deterministic Training Behavior | tests/test_deterministic_split.py::test_different_seeds_produce_different_splits, tests/test_deterministic_split.py::test_split_is_deterministic, tests/test_medical_image_trainer.py::test_training_is_deterministic |  | LINKED |
 | VER-002 | Training Metrics Recording | tests/test_medical_image_trainer.py::test_training_pipeline_generates_artifacts, tests/test_training_results.py::test_training_results_artifact_generation |  | LINKED |
 | VER-003 | Dataset Separation Enforcement | tests/test_datasource_contract.py::test_dataset_partition_generation, tests/test_deterministic_split.py::test_split_covers_all_patients, tests/test_deterministic_split.py::test_split_max_caps_are_respected, tests/test_deterministic_split.py::test_split_on_minimal_patient_count, tests/test_deterministic_split.py::test_split_partitions_are_non_overlapping, tests/test_medical_image_trainer.py::test_dataset_partitions_do_not_overlap |  | LINKED |
-| VER-004 | Model Evaluation Execution | tests/test_validation_pipeline.py::test_validation_pipeline_generates_metrics_and_report, tests/test_validation_pipeline.py::test_validation_pipeline_requires_existing_partitions |  | LINKED |
-| VER-005 | Evaluation Metric Recording | tests/test_validation_pipeline.py::test_segmentation_evaluator_records_counts_and_reset, tests/test_validation_pipeline.py::test_validation_pipeline_generates_metrics_and_report |  | LINKED |
-| VER-006 | Post-Training Validation Support | tests/test_validation_pipeline.py::test_validation_pipeline_generate_figures_false_skips_figures, tests/test_validation_pipeline.py::test_validation_pipeline_generate_figures_true_creates_files, tests/test_validation_pipeline.py::test_validation_pipeline_generates_metrics_and_report, tests/test_validation_pipeline.py::test_validation_pipeline_requires_task_definition, tests/test_validation_pipeline.py::test_validation_pipeline_supports_custom_evaluator |  | LINKED |
+| VER-004 | Model Evaluation Execution | tests/test_model_testing_pipeline.py::test_model_testing_pipeline_generates_metrics_and_report, tests/test_model_testing_pipeline.py::test_model_testing_pipeline_requires_existing_partitions |  | LINKED |
+| VER-005 | Evaluation Metric Recording | tests/test_model_testing_pipeline.py::test_model_testing_pipeline_generates_metrics_and_report, tests/test_model_testing_pipeline.py::test_segmentation_evaluator_records_counts_and_reset |  | LINKED |
+| VER-006 | Post-Training Validation Support | tests/test_model_testing_pipeline.py::test_model_testing_pipeline_generate_figures_false_skips_figures, tests/test_model_testing_pipeline.py::test_model_testing_pipeline_generate_figures_true_creates_files, tests/test_model_testing_pipeline.py::test_model_testing_pipeline_generates_metrics_and_report, tests/test_model_testing_pipeline.py::test_model_testing_pipeline_requires_task_definition, tests/test_model_testing_pipeline.py::test_model_testing_pipeline_supports_custom_evaluator |  | LINKED |
 | VER-007 | Inference Consistency Verification | tests/test_training_results.py::test_inference_determinism |  | LINKED |
 
 

@@ -3,9 +3,9 @@ from pathlib import Path
 import json
 
 
-class MedicalImageValidationResults:
+class MedicalImageModelTestingResults:
     """
-    Container for the outputs of a validation run.
+    Container for the outputs of a model testing run.
 
     Mirrors MedicalImageTrainingResults in structure and lifecycle,
     but is scoped to the held-out test partition rather than the
@@ -20,7 +20,7 @@ class MedicalImageValidationResults:
     datasource : MedicalImageDataSource
         The datasource whose test partition was evaluated.
     run_dir : Path
-        Directory where validation artefacts are written.
+        Directory where model testing artefacts are written.
     metrics : dict
         Aggregated metrics including mean_loss, evaluator-specific
         metrics (e.g. dice, iou, precision, recall), and raw confusion
@@ -29,7 +29,7 @@ class MedicalImageValidationResults:
         One entry per patient.  Written to the JSON report; not printed
         to the terminal.
     artifacts : dict
-        Paths of any files written during validation.
+        Paths of any files written during model testing.
     """
 
     def __init__(self, model, config, datasource, run_dir):
@@ -43,21 +43,21 @@ class MedicalImageValidationResults:
         self.metrics: dict = {}
         self.per_patient_results: list = []
         self.artifacts: dict = {}
-        self.sample_viz_data: list = []   # populated by ValidationPipeline for figure generation
+        self.sample_viz_data: list = []   # populated by ModelTestingPipeline for figure generation
 
         # lifecycle timestamps
-        self.validation_start_time: datetime | None = None
-        self.validation_end_time: datetime | None = None
+        self.testing_start_time: datetime | None = None
+        self.testing_end_time: datetime | None = None
 
     # --------------------------------------------------
     # Lifecycle
     # --------------------------------------------------
 
-    def mark_validation_start(self):
-        self.validation_start_time = datetime.now()
+    def mark_testing_start(self):
+        self.testing_start_time = datetime.now()
 
-    def mark_validation_complete(self):
-        self.validation_end_time = datetime.now()
+    def mark_testing_complete(self):
+        self.testing_end_time = datetime.now()
 
     # --------------------------------------------------
     # Reporting
@@ -74,20 +74,20 @@ class MedicalImageValidationResults:
         Overall accuracy is shown last with an explicit warning.
 
         Per-patient detail is intentionally omitted here; it is written
-        to validation_report.json.
+        to model_testing_report.json.
         """
 
         print("\n==============================")
-        print("Validation Results Summary")
+        print("Model Testing Results Summary")
         print("==============================")
 
         print(f"Model: {self.model.__class__.__name__}")
 
-        if self.validation_start_time and self.validation_end_time:
-            duration = self.validation_end_time - self.validation_start_time
-            print(f"Validation time: {duration}")
+        if self.testing_start_time and self.testing_end_time:
+            duration = self.testing_end_time - self.testing_start_time
+            print(f"Testing time: {duration}")
         else:
-            print("Validation still running")
+            print("Testing still running")
 
         # --- Run-level counts ---
         mean_loss  = self.metrics.get("mean_loss")
@@ -107,8 +107,6 @@ class MedicalImageValidationResults:
 
         if tp + fp + fn + tn > 0:
 
-            # Read pre-computed metrics from the evaluator where present;
-            # fall back to computing inline for backwards compatibility.
             def _m(key, num, denom):
                 if key in self.metrics:
                     return self.metrics[key]
@@ -135,19 +133,15 @@ class MedicalImageValidationResults:
             print("\nOverall metrics  (unreliable when foreground pixels are sparse)")
             print(f"  Accuracy   : {accuracy:.4f}")
 
-        print("\n(Per-patient detail written to validation_report.json)")
+        print("\n(Per-patient detail written to model_testing_report.json)")
         print("==============================\n")
 
-    def generate_validation_report(self) -> Path:
+    def generate_testing_report(self) -> Path:
         """
         Writes a JSON report to run_dir and returns its path.
-
-        Includes full metrics dict and per-patient results.  The report
-        structure mirrors the training report so downstream tooling can
-        treat both uniformly.
         """
 
-        report_path = self.run_dir / "validation_report.json"
+        report_path = self.run_dir / "model_testing_report.json"
 
         report = {
             "metrics": self.metrics,
@@ -158,5 +152,5 @@ class MedicalImageValidationResults:
         with open(report_path, "w") as f:
             json.dump(report, f, indent=2)
 
-        print(f"Validation report written to: {report_path}")
+        print(f"Model testing report written to: {report_path}")
         return report_path

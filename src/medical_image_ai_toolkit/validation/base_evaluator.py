@@ -5,7 +5,7 @@ class BaseEvaluator(ABC):
     """
     Abstract interface for per-sample evaluation during validation.
 
-    The ValidationPipeline calls ``update()`` once per sample as it
+    The ModelTestingPipeline calls ``update()`` once per sample as it
     streams through the test partition, then calls ``aggregate()`` after
     all patients have been processed.  Subclasses accumulate whatever
     state is appropriate for their task type (segmentation, detection,
@@ -17,8 +17,8 @@ class BaseEvaluator(ABC):
     1. Subclass ``BaseEvaluator``.
     2. Implement ``update(pred, target)`` to accumulate per-sample state.
     3. Implement ``aggregate()`` to return a flat ``dict[str, float|int]``
-       of metrics that will be merged into ``MedicalImageValidationResults.metrics``.
-    4. Pass an instance to ``ValidationPipeline(evaluator=...)``.
+       of metrics that will be merged into ``MedicalImageModelTestingResults.metrics``.
+    4. Pass an instance to ``ModelTestingPipeline(evaluator=...)``.
 
     The ``update`` contract
     -----------------------
