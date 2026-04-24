@@ -1,5 +1,5 @@
 """
-Figure generation for validation run artifacts.
+Figure generation for model testing run artifacts.
 
 Three plots:
   - training_curve.png   : loss per epoch

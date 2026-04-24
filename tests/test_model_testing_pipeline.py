@@ -7,7 +7,7 @@ import torch
 
 from regulatory_tools.evidence.evidence_report import EvidenceReport
 from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import MedicalImageDataSource
-from medical_image_ai_toolkit.pipeline.validation_pipeline import ValidationPipeline
+from medical_image_ai_toolkit.pipeline.model_testing_pipeline import ModelTestingPipeline
 from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
 from medical_image_ai_toolkit.training.training_config import TrainingConfig
 from medical_image_ai_toolkit.validation.base_evaluator import BaseEvaluator
@@ -15,12 +15,12 @@ from medical_image_ai_toolkit.validation.segmentation_evaluator import Segmentat
 
 
 @dataclass
-class ValidationPatient:
+class ModelTestingPatient:
     patient_id: str
     sample_masks: list[torch.Tensor]
 
 
-class ValidationIngestor:
+class ModelTestingIngestor:
 
     def __init__(self):
         self.patient_ids = ["P0", "P1", "P2", "P3"]
@@ -37,7 +37,7 @@ class ValidationIngestor:
             [[[[0.0, 1.0], [1.0, 0.0]]]],
             dtype=torch.float32,
         )
-        return ValidationPatient(patient_id=patient_id, sample_masks=[mask_a, mask_b])
+        return ModelTestingPatient(patient_id=patient_id, sample_masks=[mask_a, mask_b])
 
 
 class DeterministicSplit:
@@ -80,102 +80,102 @@ class CountingEvaluator(BaseEvaluator):
 @pytest.mark.requirement("VER-004")
 @pytest.mark.requirement("VER-005")
 @pytest.mark.requirement("VER-006")
-def test_validation_pipeline_generates_metrics_and_report(
+def test_model_testing_pipeline_generates_metrics_and_report(
     tmp_path,
     evidence_output_dir,
 ):
 
-    report = EvidenceReport(subject="Validation pipeline report generation")
+    report = EvidenceReport(subject="Model testing pipeline report generation")
 
-    datasource = MedicalImageDataSource(tmp_path, ValidationIngestor())
+    datasource = MedicalImageDataSource(tmp_path, ModelTestingIngestor())
     datasource.create_partitions(DeterministicSplit())
 
-    pipeline = ValidationPipeline(
+    pipeline = ModelTestingPipeline(
         datasource=datasource,
         model=IdentityModel(),
         config=TrainingConfig(device="cpu", task=IdentityTask()),
-        output_dir=tmp_path / "validation_runs",
+        output_dir=tmp_path / "model_testing_runs",
     )
 
     results = pipeline.run()
 
     if results.metrics.get("num_test_patients") != 1:
-        report.error("Validation pipeline reported incorrect patient count", "VER-004")
+        report.error("Model testing pipeline reported incorrect patient count", "VER-004")
 
     if results.metrics.get("num_test_samples") != 2:
-        report.error("Validation pipeline reported incorrect sample count", "VER-004")
+        report.error("Model testing pipeline reported incorrect sample count", "VER-004")
 
     if results.metrics.get("mean_loss") != 0.0:
-        report.error("Validation pipeline mean loss should be zero for identity model", "VER-005")
+        report.error("Model testing pipeline mean loss should be zero for identity model", "VER-005")
 
     for key in ("dice", "iou", "precision", "recall", "accuracy"):
         if results.metrics.get(key) != 1.0:
-            report.error(f"Validation metric {key} was not recorded as expected", "VER-005")
+            report.error(f"Model testing metric {key} was not recorded as expected", "VER-005")
 
-    report_path = results.artifacts.get("validation_report")
+    report_path = results.artifacts.get("testing_report")
     if report_path is None or not report_path.exists():
-        report.error("Validation report artifact was not generated", "VER-006")
+        report.error("Model testing report artifact was not generated", "VER-006")
 
     if len(results.per_patient_results) != 1:
-        report.error("Per-patient validation output missing", "VER-006")
+        report.error("Per-patient model testing output missing", "VER-006")
 
     report.auto_save(
-        "VER004_VER005_VER006_validation_pipeline",
+        "VER004_VER005_VER006_model_testing_pipeline",
         evidence_output_dir,
     )
     assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("VER-004")
-def test_validation_pipeline_requires_existing_partitions(
+def test_model_testing_pipeline_requires_existing_partitions(
     tmp_path,
     evidence_output_dir,
 ):
 
-    report = EvidenceReport(subject="Validation pipeline partition requirement")
+    report = EvidenceReport(subject="Model testing pipeline partition requirement")
 
-    datasource = MedicalImageDataSource(tmp_path, ValidationIngestor())
+    datasource = MedicalImageDataSource(tmp_path, ModelTestingIngestor())
 
-    pipeline = ValidationPipeline(
+    pipeline = ModelTestingPipeline(
         datasource=datasource,
         model=IdentityModel(),
         config=TrainingConfig(device="cpu", task=IdentityTask()),
-        output_dir=tmp_path / "validation_runs",
+        output_dir=tmp_path / "model_testing_runs",
     )
 
     with pytest.raises(RuntimeError):
         pipeline.run()
 
     report.auto_save(
-        "VER004_validation_requires_partitions",
+        "VER004_model_testing_requires_partitions",
         evidence_output_dir,
     )
     assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("VER-006")
-def test_validation_pipeline_requires_task_definition(
+def test_model_testing_pipeline_requires_task_definition(
     tmp_path,
     evidence_output_dir,
 ):
 
-    report = EvidenceReport(subject="Validation pipeline task requirement")
+    report = EvidenceReport(subject="Model testing pipeline task requirement")
 
-    datasource = MedicalImageDataSource(tmp_path, ValidationIngestor())
+    datasource = MedicalImageDataSource(tmp_path, ModelTestingIngestor())
     datasource.create_partitions(DeterministicSplit())
 
-    pipeline = ValidationPipeline(
+    pipeline = ModelTestingPipeline(
         datasource=datasource,
         model=IdentityModel(),
         config=TrainingConfig(device="cpu", task=None),
-        output_dir=tmp_path / "validation_runs",
+        output_dir=tmp_path / "model_testing_runs",
     )
 
     with pytest.raises(ValueError):
         pipeline.run()
 
     report.auto_save(
-        "VER006_validation_requires_task",
+        "VER006_model_testing_requires_task",
         evidence_output_dir,
     )
     assert not report.has_errors, report.summary()
@@ -226,21 +226,21 @@ def test_segmentation_evaluator_records_counts_and_reset(
 
 
 @pytest.mark.requirement("VER-006")
-def test_validation_pipeline_generate_figures_false_skips_figures(
+def test_model_testing_pipeline_generate_figures_false_skips_figures(
     tmp_path,
     evidence_output_dir,
 ):
 
-    report = EvidenceReport(subject="Validation pipeline: generate_figures=False skips figure files")
+    report = EvidenceReport(subject="Model testing pipeline: generate_figures=False skips figure files")
 
-    datasource = MedicalImageDataSource(tmp_path, ValidationIngestor())
+    datasource = MedicalImageDataSource(tmp_path, ModelTestingIngestor())
     datasource.create_partitions(DeterministicSplit())
 
-    pipeline = ValidationPipeline(
+    pipeline = ModelTestingPipeline(
         datasource=datasource,
         model=IdentityModel(),
         config=TrainingConfig(device="cpu", task=IdentityTask()),
-        output_dir=tmp_path / "validation_runs",
+        output_dir=tmp_path / "model_testing_runs",
         generate_figures=False,
     )
 
@@ -254,28 +254,28 @@ def test_validation_pipeline_generate_figures_false_skips_figures(
             "VER-006",
         )
 
-    report.auto_save("VER006_generate_figures_false", evidence_output_dir)
+    report.auto_save("VER006_model_testing_generate_figures_false", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("VER-006")
-def test_validation_pipeline_generate_figures_true_creates_files(
+def test_model_testing_pipeline_generate_figures_true_creates_files(
     tmp_path,
     evidence_output_dir,
 ):
 
-    report = EvidenceReport(subject="Validation pipeline: generate_figures=True creates figure files")
+    report = EvidenceReport(subject="Model testing pipeline: generate_figures=True creates figure files")
 
-    datasource = MedicalImageDataSource(tmp_path, ValidationIngestor())
+    datasource = MedicalImageDataSource(tmp_path, ModelTestingIngestor())
     datasource.create_partitions(DeterministicSplit())
 
     training_history = [{"epoch": 1, "loss": 0.8}, {"epoch": 2, "loss": 0.5}]
 
-    pipeline = ValidationPipeline(
+    pipeline = ModelTestingPipeline(
         datasource=datasource,
         model=IdentityModel(),
         config=TrainingConfig(device="cpu", task=IdentityTask()),
-        output_dir=tmp_path / "validation_runs",
+        output_dir=tmp_path / "model_testing_runs",
         generate_figures=True,
         training_history=training_history,
     )
@@ -287,39 +287,39 @@ def test_validation_pipeline_generate_figures_true_creates_files(
         if path is None or not path.exists():
             report.error(f"Expected figure artifact '{key}' not found", "VER-006")
 
-    report.auto_save("VER006_generate_figures_true", evidence_output_dir)
+    report.auto_save("VER006_model_testing_generate_figures_true", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("VER-006")
-def test_validation_pipeline_supports_custom_evaluator(
+def test_model_testing_pipeline_supports_custom_evaluator(
     tmp_path,
     evidence_output_dir,
 ):
 
-    report = EvidenceReport(subject="Validation pipeline custom evaluator support")
+    report = EvidenceReport(subject="Model testing pipeline custom evaluator support")
 
-    datasource = MedicalImageDataSource(tmp_path, ValidationIngestor())
+    datasource = MedicalImageDataSource(tmp_path, ModelTestingIngestor())
     datasource.create_partitions(DeterministicSplit())
 
-    pipeline = ValidationPipeline(
+    pipeline = ModelTestingPipeline(
         datasource=datasource,
         model=IdentityModel(),
         config=TrainingConfig(device="cpu", task=IdentityTask()),
         evaluator=CountingEvaluator(),
-        output_dir=tmp_path / "validation_runs",
+        output_dir=tmp_path / "model_testing_runs",
     )
 
     results = pipeline.run()
 
     if results.metrics.get("sample_updates") != 2:
-        report.error("Custom evaluator did not aggregate all validation samples", "VER-006")
+        report.error("Custom evaluator did not aggregate all model testing samples", "VER-006")
 
     if results.per_patient_results[0].get("sample_updates") != 2:
         report.error("Per-patient evaluator did not aggregate patient-local samples", "VER-006")
 
     report.auto_save(
-        "VER006_validation_custom_evaluator",
+        "VER006_model_testing_custom_evaluator",
         evidence_output_dir,
     )
     assert not report.has_errors, report.summary()

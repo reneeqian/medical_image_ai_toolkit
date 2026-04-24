@@ -11,6 +11,7 @@ import torch
 
 from regulatory_tools.evidence.evidence_report import EvidenceReport
 from medical_image_ai_toolkit.results.medical_image_training_results import MedicalImageTrainingResults
+from medical_image_ai_toolkit.validation.segmentation_evaluator import SegmentationEvaluator
 
 class MedicalImageTrainer:
     """
@@ -99,7 +100,8 @@ class MedicalImageTrainer:
                 f"  |  plateau_min_delta={plateau_min_delta}"
             )
 
-        self.model.train()
+        val_ids = self.datasource.get_val_ids() if self.datasource.has_partitions() else []
+        has_val = len(val_ids) > 0
 
         epoch_losses = []
         epochs_without_improvement = 0
@@ -107,11 +109,13 @@ class MedicalImageTrainer:
 
         for epoch in range(self.config.epochs):
 
-            print(f"\nEpoch {epoch+1}")
+            print(f"\nEpoch {epoch+1}/{self.config.epochs}")
             running_loss = 0.0
             n_samples = 0
 
             task = self.config.task
+
+            self.model.train()
 
             for patient_id in train_ids:
 
@@ -146,12 +150,52 @@ class MedicalImageTrainer:
             epoch_loss = running_loss / max(n_samples, 1)
             epoch_losses.append(epoch_loss)
 
-            results.history.append({
-                "epoch": epoch + 1,
-                "loss": epoch_loss
-            })
+            # --- Validation pass ---
+            val_metrics = {}
+            if has_val:
+                val_evaluator = SegmentationEvaluator()
+                val_running_loss = 0.0
+                val_n_samples = 0
 
-            print(f"epoch complete  |  loss={epoch_loss:.6f}")
+                self.model.eval()
+                with torch.no_grad():
+                    for patient_id in val_ids:
+                        patient_sample = self.datasource.get_patient(patient_id)
+                        for sample in task.generate_training_samples(patient_sample):
+                            x = sample["input"].to(device)
+                            y = sample["target"]
+                            if isinstance(y, torch.Tensor):
+                                y = y.to(device)
+                            pred = self.model(x)
+                            loss = task.compute_loss(pred, y)
+                            val_running_loss += loss.item()
+                            val_n_samples += 1
+                            val_evaluator.update(pred, y)
+                self.model.train()
+
+                val_loss = val_running_loss / max(val_n_samples, 1)
+                seg = val_evaluator.aggregate()
+                val_metrics = {
+                    "val_loss": val_loss,
+                    "val_dice": seg["dice"],
+                    "val_recall": seg["recall"],
+                    "val_precision": seg["precision"],
+                }
+
+            history_entry = {"epoch": epoch + 1, "loss": epoch_loss, **val_metrics}
+            results.history.append(history_entry)
+
+            if has_val:
+                vm = val_metrics
+                print(
+                    f"  train loss={epoch_loss:.6f}"
+                    f"  |  val loss={vm['val_loss']:.6f}"
+                    f"  dice={vm['val_dice']:.4f}"
+                    f"  recall={vm['val_recall']:.4f}"
+                    f"  prec={vm['val_precision']:.4f}"
+                )
+            else:
+                print(f"  train loss={epoch_loss:.6f}")
 
             if early_stop:
                 if epoch_loss <= loss_threshold:

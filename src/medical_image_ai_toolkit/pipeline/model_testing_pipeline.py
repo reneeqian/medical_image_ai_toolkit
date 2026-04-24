@@ -8,15 +8,15 @@ from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource i
 from medical_image_ai_toolkit.training.training_config import TrainingConfig
 from medical_image_ai_toolkit.validation.base_evaluator import BaseEvaluator
 from medical_image_ai_toolkit.validation.segmentation_evaluator import SegmentationEvaluator
-from medical_image_ai_toolkit.results.medical_image_validation_results import MedicalImageValidationResults
-from medical_image_ai_toolkit.visualizations.validation_figures import (
+from medical_image_ai_toolkit.results.medical_image_model_testing_results import MedicalImageModelTestingResults
+from medical_image_ai_toolkit.visualizations.model_testing_figures import (
     plot_training_curve,
     plot_confusion_matrix,
     plot_patient_samples,
 )
 
 
-class ValidationPipeline:
+class ModelTestingPipeline:
     """
     Runs inference on the held-out test partition of a partitioned
     datasource and captures per-patient and aggregate metrics.
@@ -35,11 +35,11 @@ class ValidationPipeline:
     ------------------
     The training pipeline writes a ``partitions.json`` file into its
     run directory alongside ``model.pt``.  Pass that file as
-    ``partitions_path`` so the validation pipeline restores the exact
+    ``partitions_path`` so the model testing pipeline restores the exact
     same train / val / test split rather than re-splitting independently.
 
     If the datasource already has partitions loaded (e.g. running
-    training and validation back-to-back in the same process),
+    training and model testing back-to-back in the same process),
     ``partitions_path`` may be omitted and the in-memory split is used.
 
     Parameters
@@ -61,8 +61,8 @@ class ValidationPipeline:
         pipeline.  Required when the datasource does not already have
         partitions loaded.
     output_dir : str | Path, optional
-        Root directory for validation artefacts.  Defaults to
-        ``artifacts/validation_runs``.
+        Root directory for model testing artefacts.  Defaults to
+        ``artifacts/model_testing_runs``.
     """
 
     def __init__(
@@ -82,7 +82,7 @@ class ValidationPipeline:
         self.evaluator = evaluator if evaluator is not None else SegmentationEvaluator()
         self.partitions_path = Path(partitions_path) if partitions_path is not None else None
 
-        self.output_dir = Path(output_dir or "artifacts/validation_runs")
+        self.output_dir = Path(output_dir or "artifacts/model_testing_runs")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.training_history = training_history
         self.generate_figures = generate_figures
@@ -91,9 +91,9 @@ class ValidationPipeline:
     # Public API
     # ---------------------------------------------------------
 
-    def run(self) -> MedicalImageValidationResults:
+    def run(self) -> MedicalImageModelTestingResults:
         """
-        Execute the validation pipeline and return a results object.
+        Execute the model testing pipeline and return a results object.
 
         Steps
         -----
@@ -103,11 +103,11 @@ class ValidationPipeline:
         4. Iterate over test patients; accumulate loss and delegate
            per-sample metric counting to the evaluator.
         5. Aggregate metrics from the evaluator.
-        6. Write a validation report JSON to the run directory.
-        7. Return a populated MedicalImageValidationResults.
+        6. Write a model testing report JSON to the run directory.
+        7. Return a populated MedicalImageModelTestingResults.
         """
 
-        print("\n=== VALIDATION PIPELINE START ===")
+        print("\n=== MODEL TESTING PIPELINE START ===")
 
         # 1. Resolve partitions
         if self.partitions_path is not None:
@@ -130,13 +130,13 @@ class ValidationPipeline:
         run_dir = self.output_dir / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
 
-        results = MedicalImageValidationResults(
+        results = MedicalImageModelTestingResults(
             model=self.model,
             config=self.config,
             datasource=self.datasource,
             run_dir=run_dir,
         )
-        results.mark_validation_start()
+        results.mark_testing_start()
 
         # 3. Reset evaluator and enter eval mode
         self.evaluator.reset()
@@ -147,7 +147,7 @@ class ValidationPipeline:
 
         task = self.config.task
         if task is None:
-            raise ValueError("TrainingConfig.task must be set for validation.")
+            raise ValueError("TrainingConfig.task must be set for model testing.")
 
         per_patient_results = []
         total_loss = 0.0
@@ -243,7 +243,7 @@ class ValidationPipeline:
             **aggregate_metrics,
         }
 
-        results.mark_validation_complete()
+        results.mark_testing_complete()
 
         # 6. Populate viz data
         for pid, (_, slice_idx, hu, gt_mask, pred_prob) in _viz_best.items():
@@ -256,15 +256,15 @@ class ValidationPipeline:
             })
 
         # 7. Export artefacts
-        report_path = results.generate_validation_report()
-        results.artifacts["validation_report"] = report_path
+        report_path = results.generate_testing_report()
+        results.artifacts["testing_report"] = report_path
 
         if self.generate_figures:
             results.artifacts.update(self._generate_figures(results, run_dir))
 
         results.summary()
 
-        print("=== VALIDATION PIPELINE COMPLETE ===\n")
+        print("=== MODEL TESTING PIPELINE COMPLETE ===\n")
 
         return results
 
@@ -307,7 +307,7 @@ class ValidationPipeline:
         SegmentationEvaluator is handled explicitly.  For other
         evaluator types, a no-arg construction is attempted; authors of
         custom evaluators who need init parameters should override this
-        method in a ValidationPipeline subclass.
+        method in a ModelTestingPipeline subclass.
         """
         if isinstance(self.evaluator, SegmentationEvaluator):
             return SegmentationEvaluator(threshold=self.evaluator.threshold)
