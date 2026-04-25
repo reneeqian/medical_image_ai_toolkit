@@ -33,14 +33,14 @@ class BaseEvaluator(ABC):
         """Accumulate statistics for one sample."""
 
     @abstractmethod
-    def aggregate(self) -> dict:
+    def aggregate(self) -> dict[str, float | int]:
         """
         Return a flat dict of metrics computed over all accumulated
         samples.  Called once after the full test partition has been
         processed.
         """
 
-    def reset(self) -> None:
+    def reset(self) -> None:  # noqa: B027 — intentionally non-abstract default
         """
         Reset internal accumulators.  Called by the pipeline before
         each run so that an evaluator instance can be safely reused.

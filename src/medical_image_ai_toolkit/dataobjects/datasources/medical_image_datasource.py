@@ -1,9 +1,11 @@
+import json
+import math
 from pathlib import Path
 from typing import List
-import json
+
 import matplotlib.pyplot as plt
 import numpy as np
-import math
+
 
 class MedicalImageDataSource:
     """
@@ -22,7 +24,7 @@ class MedicalImageDataSource:
 
         # discover dataset
         self.patient_ids: List[str] = self.ingestor.list_patient_ids()
-        
+
         # these will be populated after partitioning
         self.train_ids: List[str] | None = None
         self.val_ids: List[str] | None = None
@@ -31,13 +33,13 @@ class MedicalImageDataSource:
     # ---------------------------------------------------------
     # Public API
     # ---------------------------------------------------------
-    
+
     def get_num_patients(self) -> int:
         return len(self.patient_ids)
 
     def get_patient_ids(self) -> List[str]:
         return list(self.patient_ids)
-    
+
     def get_patient(self, patient_id: str):
         if patient_id not in self.patient_ids:
             raise ValueError(f"Patient ID '{patient_id}' not found in dataset")
@@ -51,7 +53,7 @@ class MedicalImageDataSource:
 
         # fallback behavior: return patient object
         return self.get_patient(patient_id)
-    
+
     def load_slice(self, patient_id: str, slice_index: int):
         sample = self.get_patient(patient_id)
 
@@ -63,7 +65,7 @@ class MedicalImageDataSource:
             )
 
         return volume[slice_index]
-        
+
     def create_partitions(self, strategy):
         train_ids, val_ids, test_ids = strategy.split(self.patient_ids)
 
@@ -73,7 +75,7 @@ class MedicalImageDataSource:
 
         return train_ids, val_ids, test_ids
 
-    
+
     def partition_summary(self):
         print("\nDataset Summary")
         print("-----------------")
@@ -94,7 +96,7 @@ class MedicalImageDataSource:
         print(f"Train: {train_n} ({train_n/total:.2%})")
         print(f"Val:   {val_n} ({val_n/total:.2%})")
         print(f"Test:  {test_n} ({test_n/total:.2%})")
-    
+
     def get_train_ids(self):
 
         if self.train_ids is None:
@@ -121,7 +123,7 @@ class MedicalImageDataSource:
             )
 
         return self.test_ids
-    
+
     def has_partitions(self):
 
         return (
@@ -240,7 +242,7 @@ class MedicalImageDataSource:
     # ---------------------------------------------------------
     # Visualization APIs
     # ---------------------------------------------------------
-    
+
     def show_slice(
         self,
         patient_id: str,
@@ -252,7 +254,7 @@ class MedicalImageDataSource:
         cols: int = 5,
         block: bool = True,
     ):
-        
+
         sample = self.get_patient(patient_id)
         volume = sample.image_volume
         num_slices = volume.shape[0]
@@ -371,7 +373,7 @@ class MedicalImageDataSource:
         else:
             plt.show(block=False)
             plt.close(fig)
-    
+
     # ---------------------------------------------------------
     # Internal utilities
     # ---------------------------------------------------------

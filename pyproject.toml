@@ -24,3 +24,14 @@ testpaths = ["tests"]
 markers = [
   "requirement(id): Traceability requirement ID",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN", "S"]

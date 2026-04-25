@@ -1,5 +1,7 @@
 import torch
+
 from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
+
 
 class TrainingConfig:
     """

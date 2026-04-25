@@ -1,6 +1,8 @@
-from typing import Dict, List, Optional
-import numpy as np
 from dataclasses import dataclass
+from typing import Dict, List, Optional
+
+import numpy as np
+
 
 @dataclass
 class VectorROI:

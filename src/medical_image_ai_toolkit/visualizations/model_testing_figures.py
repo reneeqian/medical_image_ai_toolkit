@@ -8,10 +8,12 @@ Three plots:
 """
 
 import matplotlib
+
 matplotlib.use("Agg")
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
 
 CT_WL, CT_WW = 40, 400   # cardiac soft-tissue window (HU)
 
@@ -103,6 +105,7 @@ def plot_patient_samples(sample_viz_data: list, path: Path) -> Path:
             [gt_mask,   pred],
             ["Oranges", "hot"],
             ["GT Annotation", "Model Prediction"],
+            strict=True,
         ):
             ax.imshow(hu, cmap="gray", vmin=vmin, vmax=vmax,
                       interpolation="bilinear")

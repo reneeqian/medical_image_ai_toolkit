@@ -1,9 +1,14 @@
 from collections import defaultdict
 from pathlib import Path
 
-from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import MedicalImageDataSource
-from medical_image_ai_toolkit.dataobjects.patient_sample_contract import enforce_patient_sample_contract
 from regulatory_tools.evidence.evidence_report import EvidenceReport
+
+from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
+    MedicalImageDataSource,
+)
+from medical_image_ai_toolkit.dataobjects.patient_sample_contract import (
+    enforce_patient_sample_contract,
+)
 
 
 class DatasetValidator:
@@ -11,7 +16,7 @@ class DatasetValidator:
     def __init__(self, datasource: MedicalImageDataSource, req_provider=None):
         self.datasource = datasource
         self.req_provider = req_provider
-        
+
     def run(self):
 
         report = EvidenceReport(
@@ -46,7 +51,7 @@ class DatasetValidator:
                     context=f"patient={pid} | error={str(e)}"
                 )
 
-        
+
         return report
 
 
@@ -89,8 +94,8 @@ def summarize_dataset_validation(report):
     print(f"ERROR: {severity_counts['ERROR']}")
     print(f"WARN : {severity_counts['WARN']}")
     print("\n=== End Dataset Validation Report ===\n")
-    
-    
+
+
 def summarize_invalid_annotation_slices(report):
     """
     Extract and group invalid annotation slice warnings into a compact summary,

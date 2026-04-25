@@ -1,8 +1,9 @@
 import numpy as np
-
 from regulatory_tools.evidence.evidence_report import EvidenceReport
-from medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
+
 from medical_image_ai_toolkit.dataobjects.annotation_bundle import VectorROI
+from medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
+
 
 def enforce_patient_sample_contract(
     sample: PatientSample,
@@ -12,7 +13,7 @@ def enforce_patient_sample_contract(
 ) -> EvidenceReport:
     """
     Check structural and semantic correctness of a PatientSample.
-    
+
         Implements data requirements DAT-001 through DAT-001.
     """
     if report is None:
@@ -22,7 +23,7 @@ def enforce_patient_sample_contract(
     _check_spacing(sample, report)
     _check_patient_id(sample, report)
     _check_annotations(sample, report, require_annotations=require_annotations)
-    
+
     return report
 
 def _check_volume(sample: PatientSample, report: EvidenceReport) -> None:
@@ -99,7 +100,7 @@ def _check_patient_id(sample: PatientSample, report: EvidenceReport) -> None:
             requirement_tag="dataset_validation",
             context=sample.patient_id,
         )
-        
+
 def _check_annotations(
     sample: PatientSample,
     report: EvidenceReport,
@@ -130,7 +131,7 @@ def _check_annotations(
                 requirement_tag="annotation_validation",
             )
         return
-    
+
     # --- allow dense mask annotations ---
     if isinstance(ann, np.ndarray):
         report.info(

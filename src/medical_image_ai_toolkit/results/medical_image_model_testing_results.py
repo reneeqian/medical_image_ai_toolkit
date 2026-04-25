@@ -1,6 +1,17 @@
+from __future__ import annotations
+
+import json
 from datetime import datetime
 from pathlib import Path
-import json
+from typing import TYPE_CHECKING
+
+import torch.nn as nn
+
+if TYPE_CHECKING:
+    from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
+        MedicalImageDataSource,
+    )
+    from medical_image_ai_toolkit.training.training_config import TrainingConfig
 
 
 class MedicalImageModelTestingResults:
@@ -32,7 +43,13 @@ class MedicalImageModelTestingResults:
         Paths of any files written during model testing.
     """
 
-    def __init__(self, model, config, datasource, run_dir):
+    def __init__(
+        self,
+        model: nn.Module,
+        config: TrainingConfig,
+        datasource: MedicalImageDataSource,
+        run_dir: Path | str,
+    ) -> None:
 
         self.model = model
         self.config = config
@@ -53,17 +70,17 @@ class MedicalImageModelTestingResults:
     # Lifecycle
     # --------------------------------------------------
 
-    def mark_testing_start(self):
+    def mark_testing_start(self) -> None:
         self.testing_start_time = datetime.now()
 
-    def mark_testing_complete(self):
+    def mark_testing_complete(self) -> None:
         self.testing_end_time = datetime.now()
 
     # --------------------------------------------------
     # Reporting
     # --------------------------------------------------
 
-    def summary(self):
+    def summary(self) -> None:
         """
         Print a concise terminal summary.
 
