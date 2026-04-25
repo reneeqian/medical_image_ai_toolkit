@@ -3,6 +3,9 @@ name: Medical Image AI Toolkit Forge Health
 on:
   push:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   forge-health:
     runs-on: ubuntu-latest
