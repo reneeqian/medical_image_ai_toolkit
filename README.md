@@ -46,3 +46,11 @@ The primary documentation for this module is:
 
 Requirements follow the convention defined in
 `regulatory_tools/docs/Requirements_Convention.md`.
+
+---
+
+## Forge Health
+
+<!-- forge-health-start -->
+*Report not yet generated.*
+<!-- forge-health-end -->
