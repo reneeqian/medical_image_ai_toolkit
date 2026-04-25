@@ -52,5 +52,16 @@ Requirements follow the convention defined in
 ## Forge Health
 
 <!-- forge-health-start -->
-*Report not yet generated.*
+*Last run: 2026-04-25*
+
+**Grade: B** (score: 0.83)
+
+| Collector | Score |
+|-----------|-------|
+| Test Metrics | 0.86 |
+| Complexity | 0.78 |
+| Dependency Health | 0.85 |
+| Requirements Coverage | 0.90 |
+| Static Analysis | 0.64 |
+| Type Coverage | 0.90 |
 <!-- forge-health-end -->
