@@ -2,6 +2,8 @@ name: Medical Image AI Toolkit Forge Health
 
 on:
   push:
+  pull_request:
+    branches: [dev]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -9,6 +11,9 @@ env:
 jobs:
   forge-health:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +34,15 @@ jobs:
 
       - name: Run forge health assessment
         run: python runtests.py
+
+      - name: Commit README health update
+        if: success() || failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git diff --staged --quiet || git commit -m "docs: update forge health report [skip ci]"
+          git push || echo "README push skipped (protected branch — update will arrive via PR)"
 
       - name: Upload health report
         if: always()
