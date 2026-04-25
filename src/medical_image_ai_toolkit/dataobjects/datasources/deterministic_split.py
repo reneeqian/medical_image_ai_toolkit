@@ -1,9 +1,20 @@
+from __future__ import annotations
+
 import random
+from collections.abc import Iterable
 
 
 class DeterministicHoldoutSplit:
 
-    def __init__(self, train=0.7, val=0.15, seed=42, max_train=None, max_val=None, max_test=None):
+    def __init__(
+        self,
+        train: float = 0.7,
+        val: float = 0.15,
+        seed: int = 42,
+        max_train: int | None = None,
+        max_val: int | None = None,
+        max_test: int | None = None,
+    ) -> None:
         self.train = train
         self.val = val
         self.seed = seed
@@ -11,7 +22,9 @@ class DeterministicHoldoutSplit:
         self.max_val = max_val
         self.max_test = max_test
 
-    def split(self, patient_ids):
+    def split(
+        self, patient_ids: Iterable[str]
+    ) -> tuple[list[str], list[str], list[str]]:
         rng = random.Random(self.seed)
         ids = list(patient_ids)
         rng.shuffle(ids)

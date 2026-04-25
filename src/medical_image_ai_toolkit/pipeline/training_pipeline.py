@@ -1,11 +1,10 @@
-from pathlib import Path
 
-from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import MedicalImageDataSource
-from medical_image_ai_toolkit.dataobjects.data_validation.dataset_validator import DatasetValidator, summarize_dataset_validation
+from medical_image_ai_toolkit.dataobjects.data_validation.dataset_validator import (
+    DatasetValidator,
+    summarize_dataset_validation,
+)
 from medical_image_ai_toolkit.training.medical_image_trainer import MedicalImageTrainer
-from medical_image_ai_toolkit.training.training_config import TrainingConfig
-from medical_image_ai_toolkit.results.medical_image_training_results import MedicalImageTrainingResults
-from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
+
 
 class TrainingPipeline:
 
@@ -47,11 +46,11 @@ class TrainingPipeline:
             self.config,
             output_dir=self.output_dir,
         )
-        
+
         trainer.sanity_check()
 
         results = trainer.train()
-        
+
         # 4. Export results
         model_path = results.run_dir / "model.pt"
 
@@ -59,7 +58,7 @@ class TrainingPipeline:
         results.artifacts["model"] = model_path
         partitions_path = self.datasource.save_partitions(results.run_dir)
         results.artifacts["partitions"] = partitions_path
-        report_path = results.generate_training_report()
+        results.generate_training_report()
 
         print("\n=== PIPELINE COMPLETE ===")
 

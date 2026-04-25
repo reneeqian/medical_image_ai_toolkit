@@ -8,7 +8,7 @@
 
 ## Code Coverage
 
-**Line Coverage:** 85.7%
+**Line Coverage:** 85.8%
 
 Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 
@@ -41,7 +41,7 @@ Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 | SYS-005 | Explicit Dataset Validation | tests/test_medical_image_trainer.py::test_training_pipeline_stops_on_dataset_validation_errors |  | LINKED |
 | TRN-001 | Configurable Training Execution | tests/test_medical_image_trainer.py::test_training_respects_device, tests/test_medical_image_trainer.py::test_training_without_task_fails, tests/test_training_config.py::test_training_config_initialization |  | LINKED |
 | TRN-002 | Hyperparameter Sweep Support |  |  | UNTESTED |
-| TRN-003 | Training Shall Detect Nan Loss | tests/test_medical_image_trainer.py::test_training_detects_nan_loss |  | LINKED |
+| TRN-003 | Training Shall Detect Nan Loss | tests/test_medical_image_trainer.py::test_training_detects_nan_loss | TRN003_nan_loss_detection_20260424_220510_681762.json | PASS |
 | TRN-004 | Training Run Artifact Generation | tests/test_medical_image_trainer.py::test_training_pipeline_generates_artifacts |  | LINKED |
 | TRN-005 | Training Checkpoint Support | tests/test_medical_image_trainer.py::test_early_stop_disabled_runs_all_epochs, tests/test_medical_image_trainer.py::test_early_stop_loss_threshold_halts_training, tests/test_medical_image_trainer.py::test_early_stop_plateau_halts_training, tests/test_training_config.py::test_training_config_early_stop_can_be_disabled, tests/test_training_config.py::test_training_config_early_stop_custom_values, tests/test_training_config.py::test_training_config_early_stop_defaults |  | LINKED |
 | TRN-006 | Deterministic Training Initialization | tests/test_medical_image_trainer.py::test_training_is_deterministic |  | LINKED |

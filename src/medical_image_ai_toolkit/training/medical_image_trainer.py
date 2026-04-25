@@ -3,15 +3,24 @@ from __future__ import annotations
 import json
 import random
 from datetime import datetime
-import numpy as np
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import TYPE_CHECKING
 
+import numpy as np
 import torch
+import torch.nn as nn
 
-from regulatory_tools.evidence.evidence_report import EvidenceReport
-from medical_image_ai_toolkit.results.medical_image_training_results import MedicalImageTrainingResults
+from medical_image_ai_toolkit.results.medical_image_training_results import (
+    MedicalImageTrainingResults,
+)
 from medical_image_ai_toolkit.validation.segmentation_evaluator import SegmentationEvaluator
+
+if TYPE_CHECKING:
+    from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
+        MedicalImageDataSource,
+    )
+    from medical_image_ai_toolkit.training.training_config import TrainingConfig
+
 
 class MedicalImageTrainer:
     """
@@ -38,12 +47,12 @@ class MedicalImageTrainer:
 
     def __init__(
         self,
-        datasource,
-        model,
-        training_config,
-        output_dir=None,
-        random_seed=42,
-    ):
+        datasource: MedicalImageDataSource,
+        model: nn.Module,
+        training_config: TrainingConfig,
+        output_dir: str | Path | None = None,
+        random_seed: int | None = 42,
+    ) -> None:
         self.datasource = datasource
         self.model = model
         self.config = training_config
@@ -53,12 +62,12 @@ class MedicalImageTrainer:
 
         if random_seed is not None:
             self._set_seed(random_seed)
-    
+
     # ---------------------------------------------------------
     # Public API
     # ---------------------------------------------------------
 
-    def train(self):
+    def train(self) -> MedicalImageTrainingResults:
         if not self.datasource.has_partitions():
             raise RuntimeError("Datasource partitions not created")
         if self.config.task is None:
@@ -74,11 +83,11 @@ class MedicalImageTrainer:
             self.model.parameters(),
             lr=self.config.learning_rate
         )
-        
+
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         run_dir = self.output_dir / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
-        
+
         results = MedicalImageTrainingResults(
             self.model,
             self.config,
@@ -238,8 +247,8 @@ class MedicalImageTrainer:
         results.mark_training_complete()
 
         return results
-    
-    def sanity_check(self):
+
+    def sanity_check(self) -> None:
 
         print("\n==============================")
         print("MedicalImageTrainer Sanity Check")
@@ -290,7 +299,6 @@ class MedicalImageTrainer:
         print(self.model.__class__.__name__)
 
         try:
-            import torch
 
             total_params = sum(p.numel() for p in self.model.parameters())
             trainable_params = sum(
@@ -314,7 +322,7 @@ class MedicalImageTrainer:
     # Internal methods
     # ---------------------------------------------------------
 
-    def _set_seed(self, seed):
+    def _set_seed(self, seed: int) -> None:
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
         np.random.seed(seed)

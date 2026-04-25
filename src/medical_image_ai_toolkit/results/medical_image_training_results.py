@@ -1,14 +1,33 @@
+from __future__ import annotations
+
+import json
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+import numpy as np
 import torch
 import torch.nn as nn
+
+if TYPE_CHECKING:
+    from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
+        MedicalImageDataSource,
+    )
+    from medical_image_ai_toolkit.training.training_config import TrainingConfig
+
 
 class MedicalImageTrainingResults:
     """
     Minimal container for outputs of a training run.
     """
 
-    def __init__(self, model, config, datasource, run_dir):
+    def __init__(
+        self,
+        model: nn.Module,
+        config: TrainingConfig,
+        datasource: MedicalImageDataSource,
+        run_dir: Path | str,
+    ) -> None:
 
         self.model = model
         self.config = config
@@ -19,16 +38,16 @@ class MedicalImageTrainingResults:
         self.history = []
         self.metrics = {}
         self.artifacts = {}
-        
+
         # initialize lifecycle state
         self.training_start_time = None
         self.training_end_time = None
-        
+
     # --------------------------------------------------
     # Training lifecycle
     # --------------------------------------------------
 
-    def mark_training_complete(self):
+    def mark_training_complete(self) -> None:
 
         self.training_end_time = datetime.now()
 
@@ -36,7 +55,7 @@ class MedicalImageTrainingResults:
     # Reporting
     # --------------------------------------------------
 
-    def summary(self):
+    def summary(self) -> None:
 
         print("\n==============================")
         print("Training Results Summary")
@@ -61,12 +80,10 @@ class MedicalImageTrainingResults:
                 print(f"{k}: {v}")
 
         print("==============================\n")
-    
-    def generate_training_report(self):
+
+    def generate_training_report(self) -> Path:
 
         report_path = self.run_dir / "training_report.json"
-
-        import json
 
         report = {
             "metrics": self.metrics,
@@ -84,7 +101,7 @@ class MedicalImageTrainingResults:
     # Model export
     # --------------------------------------------------
 
-    def export_model(self, path):
+    def export_model(self, path: str | Path) -> None:
 
         try:
             torch.save(self.model.state_dict(), path)
@@ -93,12 +110,12 @@ class MedicalImageTrainingResults:
         except Exception as e:
             print("Failed to export model")
             print(e)
-            
+
     # --------------------------------------------------
     # Inference
     # --------------------------------------------------
-    
-    def run_inference(self, data):
+
+    def run_inference(self, data: list[np.ndarray]) -> list[torch.Tensor]:
 
         self.model.eval()
 

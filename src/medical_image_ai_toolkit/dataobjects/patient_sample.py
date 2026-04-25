@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
+from typing import Any, Dict
+
 import numpy as np
 
 from medical_image_ai_toolkit.dataobjects.annotation_bundle import AnnotationBundle
+
 
 @dataclass
 class PatientSample:
@@ -16,17 +18,17 @@ class PatientSample:
 
     patient_id: str
     metadata: Dict[str, Any] = field(default_factory=dict)
-        
+
     def __repr__(self) -> str:
         lines = [
             "PatientSample(",
             f"  patient_id: {self.patient_id}",
-            f"  image_volume:",
+            "  image_volume:",
             f"    shape: {self.image_volume.shape}",
             f"    dtype: {self.image_volume.dtype}",
             f"    min/max: {self.image_volume.min():.1f} / {self.image_volume.max():.1f}",
             f"  spacing (z, y, x): {self.spacing}",
-            f"  annotations:",
+            "  annotations:",
         ]
 
         if self.annotations.vector_rois:
