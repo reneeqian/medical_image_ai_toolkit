@@ -1,2 +1,2 @@
 [test_runner]
-python = "/Users/reneeqian/miniconda3/envs/medimg-coronary-v1/bin/python"
+python = "python"
