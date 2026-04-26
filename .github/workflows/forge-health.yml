@@ -27,7 +27,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy torch pytest pydicom scipy scikit-image imageio pyyaml pytest-cov matplotlib
           pip install "forge-utils[collectors] @ git+https://github.com/reneeqian/forge.git"
-          pip install "git+https://github.com/reneeqian/regulatory_tools.git@dev"
+          pip install "git+https://github.com/reneeqian/regulatory_tools.git@main"
 
       - name: Install project
         run: pip install -e .
