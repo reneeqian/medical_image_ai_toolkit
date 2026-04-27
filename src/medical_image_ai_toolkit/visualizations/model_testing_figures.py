@@ -18,7 +18,8 @@ import numpy as np
 CT_WL, CT_WW = 40, 400   # cardiac soft-tissue window (HU)
 
 
-def plot_training_curve(history: list, path: Path) -> Path:
+def plot_training_curve(history: list[dict], path: Path) -> Path:
+    """Plot training loss per epoch and save to ``path``."""
     epochs = [h["epoch"] for h in history]
     losses = [h["loss"] for h in history]
 
@@ -36,6 +37,7 @@ def plot_training_curve(history: list, path: Path) -> Path:
 
 
 def plot_confusion_matrix(metrics: dict, path: Path) -> Path:
+    """Plot a pixel-level confusion matrix heatmap and save to ``path``."""
     tp = int(metrics.get("tp", 0))
     fp = int(metrics.get("fp", 0))
     fn = int(metrics.get("fn", 0))
@@ -81,7 +83,16 @@ def plot_confusion_matrix(metrics: dict, path: Path) -> Path:
     return Path(path)
 
 
-def plot_patient_samples(sample_viz_data: list, path: Path) -> Path:
+def plot_patient_samples(sample_viz_data: list[dict], path: Path) -> Path | None:
+    """
+    Plot a grid of GT annotation vs model prediction for selected patients.
+
+    Each row shows one patient: left column is the ground-truth overlay,
+    right column is the model prediction overlay, both rendered on the
+    CT image with the cardiac soft-tissue window.
+
+    Returns ``None`` when ``sample_viz_data`` is empty (no figure written).
+    """
     n = len(sample_viz_data)
     if n == 0:
         return None
