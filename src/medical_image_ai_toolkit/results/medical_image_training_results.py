@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
@@ -14,6 +15,8 @@ if TYPE_CHECKING:
         MedicalImageDataSource,
     )
     from medical_image_ai_toolkit.training.training_config import TrainingConfig
+
+logger = logging.getLogger(__name__)
 
 
 class MedicalImageTrainingResults:
@@ -35,20 +38,19 @@ class MedicalImageTrainingResults:
 
         self.run_dir = Path(run_dir)
 
-        self.history = []
-        self.metrics = {}
-        self.artifacts = {}
+        self.history: list[dict] = []
+        self.metrics: dict[str, Any] = {}
+        self.artifacts: dict[str, Path] = {}
 
-        # initialize lifecycle state
-        self.training_start_time = None
-        self.training_end_time = None
+        self.training_start_time: datetime | None = None
+        self.training_end_time: datetime | None = None
 
     # --------------------------------------------------
     # Training lifecycle
     # --------------------------------------------------
 
     def mark_training_complete(self) -> None:
-
+        """Record the training end timestamp."""
         self.training_end_time = datetime.now()
 
     # --------------------------------------------------
@@ -56,6 +58,7 @@ class MedicalImageTrainingResults:
     # --------------------------------------------------
 
     def summary(self) -> None:
+        """Print a concise terminal summary of training metrics."""
 
         print("\n==============================")
         print("Training Results Summary")
@@ -82,6 +85,12 @@ class MedicalImageTrainingResults:
         print("==============================\n")
 
     def generate_training_report(self) -> Path:
+        """
+        Write a JSON training report to ``run_dir`` and return its path.
+
+        The report includes final metrics, the full epoch history, and a
+        string representation of the training config.
+        """
 
         report_path = self.run_dir / "training_report.json"
 
@@ -95,6 +104,7 @@ class MedicalImageTrainingResults:
         with open(report_path, "w") as f:
             json.dump(report, f, indent=2, default=str)
 
+        logger.info("Training report written to: %s", report_path)
         return report_path
 
     # --------------------------------------------------
@@ -102,20 +112,41 @@ class MedicalImageTrainingResults:
     # --------------------------------------------------
 
     def export_model(self, path: str | Path) -> None:
+        """
+        Save the model state dict to ``path``.
+
+        Logs an error and continues (does not raise) if the save fails,
+        so the rest of the pipeline artefacts are still written.
+        """
 
         try:
             torch.save(self.model.state_dict(), path)
-            print(f"Model exported to: {path}")
+            logger.info("Model exported to: %s", path)
 
         except Exception as e:
-            print("Failed to export model")
-            print(e)
+            logger.error("Failed to export model to %s: %s", path, e)
 
     # --------------------------------------------------
     # Inference
     # --------------------------------------------------
 
     def run_inference(self, data: list[np.ndarray]) -> list[torch.Tensor]:
+        """
+        Run batch inference on a list of raw numpy arrays.
+
+        Each array is converted to a float tensor with a leading batch
+        dimension before being passed to the model.
+
+        Parameters
+        ----------
+        data : list[np.ndarray]
+            Input arrays, one per sample.
+
+        Returns
+        -------
+        list[torch.Tensor]
+            Model outputs, one tensor per input sample.
+        """
 
         self.model.eval()
 

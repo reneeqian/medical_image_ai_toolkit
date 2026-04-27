@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import random
 from datetime import datetime
 from pathlib import Path
@@ -20,6 +21,8 @@ if TYPE_CHECKING:
         MedicalImageDataSource,
     )
     from medical_image_ai_toolkit.training.training_config import TrainingConfig
+
+logger = logging.getLogger(__name__)
 
 
 class MedicalImageTrainer:
@@ -68,6 +71,29 @@ class MedicalImageTrainer:
     # ---------------------------------------------------------
 
     def train(self) -> MedicalImageTrainingResults:
+        """
+        Run the training loop and return a populated results object.
+
+        Iterates over training patients for ``config.epochs`` epochs,
+        computing per-sample loss and updating model weights.  A
+        validation pass (Dice, recall, precision, val loss) is run after
+        each epoch when a val partition exists.  Early stopping is
+        applied when ``config.early_stop`` is True.
+
+        Returns
+        -------
+        MedicalImageTrainingResults
+            Contains epoch history, final metrics, and references to
+            exported artefact paths.
+
+        Raises
+        ------
+        RuntimeError
+            If partitions have not been created on the datasource, or if
+            a NaN loss is detected during training.
+        ValueError
+            If ``config.task`` is None.
+        """
         if not self.datasource.has_partitions():
             raise RuntimeError("Datasource partitions not created")
         if self.config.task is None:
@@ -101,12 +127,12 @@ class MedicalImageTrainer:
         plateau_patience = self.config.plateau_patience
         plateau_min_delta = self.config.plateau_min_delta
 
-        print("Starting training")
+        logger.info("Starting training")
         if early_stop:
-            print(
-                f"Early stopping ON  |  loss_threshold={loss_threshold}"
-                f"  |  plateau_patience={plateau_patience}"
-                f"  |  plateau_min_delta={plateau_min_delta}"
+            logger.info(
+                "Early stopping ON  |  loss_threshold=%s  |  plateau_patience=%s"
+                "  |  plateau_min_delta=%s",
+                loss_threshold, plateau_patience, plateau_min_delta,
             )
 
         val_ids = self.datasource.get_val_ids() if self.datasource.has_partitions() else []
@@ -118,7 +144,7 @@ class MedicalImageTrainer:
 
         for epoch in range(self.config.epochs):
 
-            print(f"\nEpoch {epoch+1}/{self.config.epochs}")
+            logger.info("Epoch %d/%d", epoch + 1, self.config.epochs)
             running_loss = 0.0
             n_samples = 0
 
@@ -196,15 +222,16 @@ class MedicalImageTrainer:
 
             if has_val:
                 vm = val_metrics
-                print(
-                    f"  train loss={epoch_loss:.6f}"
-                    f"  |  val loss={vm['val_loss']:.6f}"
-                    f"  dice={vm['val_dice']:.4f}"
-                    f"  recall={vm['val_recall']:.4f}"
-                    f"  prec={vm['val_precision']:.4f}"
+                logger.info(
+                    "  train loss=%.6f  |  val loss=%.6f  dice=%.4f  recall=%.4f  prec=%.4f",
+                    epoch_loss,
+                    vm["val_loss"],
+                    vm["val_dice"],
+                    vm["val_recall"],
+                    vm["val_precision"],
                 )
             else:
-                print(f"  train loss={epoch_loss:.6f}")
+                logger.info("  train loss=%.6f", epoch_loss)
 
             if early_stop:
                 if epoch_loss <= loss_threshold:
@@ -227,7 +254,7 @@ class MedicalImageTrainer:
 
         epochs_trained = len(epoch_losses)
         if stop_reason:
-            print(f"\nEarly stop after epoch {epochs_trained}: {stop_reason}")
+            logger.info("Early stop after epoch %d: %s", epochs_trained, stop_reason)
 
         results.metrics = {
             "final_loss": epoch_losses[-1],
@@ -249,6 +276,13 @@ class MedicalImageTrainer:
         return results
 
     def sanity_check(self) -> None:
+        """
+        Print a diagnostic summary of the datasource, config, and model.
+
+        Intended to be called before ``train()`` so the user can verify
+        partition sizes, hyperparameters, and model architecture at a glance.
+        Output goes to stdout because this is an interactive display method.
+        """
 
         print("\n==============================")
         print("MedicalImageTrainer Sanity Check")
@@ -262,7 +296,7 @@ class MedicalImageTrainer:
 
         try:
             total = self.datasource.get_num_patients()
-        except Exception:
+        except AttributeError:
             total = len(self.datasource)
 
         print(f"Total patients: {total}")
@@ -311,8 +345,8 @@ class MedicalImageTrainer:
             device = next(self.model.parameters()).device
             print(f"Model device: {device}")
 
-        except Exception:
-
+        except (StopIteration, RuntimeError):
+            logger.warning("Could not inspect model parameters.")
             print("Could not inspect model parameters.")
 
         print("\nSanity check complete.")
