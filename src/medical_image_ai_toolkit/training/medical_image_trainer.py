@@ -56,10 +56,12 @@ class MedicalImageTrainer:
         training_config: TrainingConfig,
         output_dir: str | Path | None = None,
         random_seed: int | None = 42,
+        resume_from: str | Path | None = None,
     ) -> None:
         self.datasource = datasource
         self.model = model
         self.config = training_config
+        self.resume_from = Path(resume_from) if resume_from is not None else None
 
         self.output_dir = Path(output_dir or "artifacts/training_runs")
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -125,10 +127,39 @@ class MedicalImageTrainer:
         )
         results.training_start_time = datetime.now()
 
-        early_stop       = self.config.early_stop
-        loss_threshold   = self.config.loss_threshold
-        plateau_patience = self.config.plateau_patience
+        early_stop        = self.config.early_stop
+        loss_threshold    = self.config.loss_threshold
+        plateau_patience  = self.config.plateau_patience
         plateau_min_delta = self.config.plateau_min_delta
+        checkpoint_every  = self.config.checkpoint_every
+
+        epoch_losses: list[float] = []
+        epochs_without_improvement = 0
+        start_epoch = 0
+
+        # --- Resume from checkpoint ---
+        if self.resume_from is not None:
+            if self.resume_from.exists():
+                print(f"  [checkpoint] loading {self.resume_from}")
+                ckpt = torch.load(self.resume_from, map_location=device, weights_only=False)
+                self.model.load_state_dict(ckpt["model_state_dict"])
+                optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+                start_epoch = ckpt["epoch"] + 1
+                epoch_losses = ckpt["epoch_losses"]
+                epochs_without_improvement = ckpt.get("epochs_without_improvement", 0)
+                results.history = ckpt.get("history", [])
+                print(
+                    f"  [checkpoint] resumed from epoch {ckpt['epoch'] + 1}"
+                    f"  → continuing from epoch {start_epoch + 1}/{self.config.epochs}"
+                )
+                logger.info(
+                    "Resumed from checkpoint %s (epoch %d)",
+                    self.resume_from,
+                    ckpt["epoch"],
+                )
+            else:
+                logger.warning("resume_from path not found, starting fresh: %s", self.resume_from)
+                print(f"  [checkpoint] WARNING: {self.resume_from} not found — starting fresh")
 
         logger.info("Starting training")
         if early_stop:
@@ -144,7 +175,8 @@ class MedicalImageTrainer:
         evidence.info(
             f"model={self.model.__class__.__name__}  device={device}"
             f"  lr={self.config.learning_rate}  optimizer={self.config.optimizer.__name__}"
-            f"  epochs={self.config.epochs}  early_stop={self.config.early_stop}",
+            f"  epochs={self.config.epochs}  early_stop={self.config.early_stop}"
+            f"  checkpoint_every={checkpoint_every}  resume_from={self.resume_from}",
             "TRN-001",
         )
         evidence.info(
@@ -152,12 +184,10 @@ class MedicalImageTrainer:
             "TRN-008",
         )
 
-        epoch_losses = []
-        epochs_without_improvement = 0
         stop_reason = None
         _epoch_start = time.time()
 
-        for epoch in range(self.config.epochs):
+        for epoch in range(start_epoch, self.config.epochs):
 
             logger.info("Epoch %d/%d", epoch + 1, self.config.epochs)
             running_loss = 0.0
@@ -256,6 +286,23 @@ class MedicalImageTrainer:
                     f"  ({elapsed:.1f}s)"
                 )
                 evidence.info(f"epoch={epoch + 1}  loss={epoch_loss:.6f}", "TRN-004")
+
+            # --- Checkpoint ---
+            if checkpoint_every > 0 and (epoch + 1) % checkpoint_every == 0:
+                ckpt = {
+                    "epoch": epoch,
+                    "model_state_dict": self.model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "epoch_losses": epoch_losses,
+                    "epochs_without_improvement": epochs_without_improvement,
+                    "history": results.history,
+                }
+                ckpt_path = run_dir / f"checkpoint_epoch_{epoch + 1:03d}.pt"
+                torch.save(ckpt, ckpt_path)
+                latest_path = run_dir / "checkpoint_latest.pt"
+                torch.save(ckpt, latest_path)
+                print(f"  [checkpoint] saved → {ckpt_path.name}")
+                logger.info("Checkpoint saved: %s", ckpt_path)
 
             if early_stop:
                 if epoch_loss <= loss_threshold:
