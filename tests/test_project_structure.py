@@ -132,3 +132,37 @@ def test_project_documentation_structure(
     )
 
     assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("DOC-003")
+def test_readme_describes_training_workflow(
+    request,
+    evidence_output_dir,
+):
+    """
+    DOC-003: docs shall describe the intended role of the toolkit.
+    Verify README.md mentions the training workflow.
+    """
+
+    project_root = Path(__file__).resolve().parents[1]
+    readme_path = project_root / "README.md"
+
+    report = EvidenceReport(
+        subject="README describes training workflow",
+        test_id=request.node.nodeid,
+    )
+
+    if not readme_path.exists():
+        report.error("README.md not found", "DOC-003")
+    else:
+        content = readme_path.read_text(encoding="utf-8").lower()
+        keywords = ("train", "trainingpipeline", "medicalimagetrainer")
+        if not any(kw in content for kw in keywords):
+            report.error(
+                "README.md does not mention training workflow "
+                f"(checked: {keywords})",
+                "DOC-003",
+            )
+
+    report.auto_save("DOC003_readme_training_workflow", evidence_output_dir)
+    assert not report.has_errors, report.summary()

@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from regulatory_tools.evidence.evidence_report import EvidenceReport
+
 from medical_image_ai_toolkit.dataobjects.data_validation.dataset_validator import (
     DatasetValidator,
     summarize_dataset_validation,
@@ -109,9 +111,26 @@ class TrainingPipeline:
         results.artifacts["partitions"] = partitions_path
         results.generate_training_report()
 
+        # 5. Pipeline-level evidence: merge dataset validation + training evidence
+        pipeline_evidence = EvidenceReport(
+            subject=f"Training pipeline: {self.model.__class__.__name__}"
+        )
+        pipeline_evidence.merge(ds_validation_report, "dataset_validation")
+        if results.evidence_report is not None:
+            pipeline_evidence.merge(results.evidence_report, "training")
+        pipeline_evidence.info(
+            f"artifacts: model={model_path.name}  partitions={partitions_path.name}"
+            f"  report=training_report.json  evidence=training_evidence.json",
+            "TRN-004",
+        )
+        pipeline_evidence_path = results.run_dir / "pipeline_evidence.json"
+        pipeline_evidence.save(pipeline_evidence_path)
+        results.artifacts["pipeline_evidence"] = pipeline_evidence_path
+
         logger.info("=== PIPELINE COMPLETE ===")
 
         return {
             "dataset_validation": ds_validation_report,
             "results": results,
+            "evidence": pipeline_evidence,
         }

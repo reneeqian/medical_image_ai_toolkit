@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Any
 import torch.nn as nn
 
 if TYPE_CHECKING:
+    from regulatory_tools.evidence.evidence_report import EvidenceReport
+
     from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
         MedicalImageDataSource,
     )
@@ -64,6 +66,7 @@ class MedicalImageModelTestingResults:
         self.per_patient_results: list[dict] = []
         self.artifacts: dict[str, Path] = {}
         self.sample_viz_data: list[dict] = []
+        self.evidence_report: EvidenceReport | None = None
 
         self.testing_start_time: datetime | None = None
         self.testing_end_time: datetime | None = None

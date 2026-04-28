@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING
 import numpy as np
 import torch
 import torch.nn as nn
+from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 from medical_image_ai_toolkit.results.medical_image_training_results import (
     MedicalImageTrainingResults,
 )
-from medical_image_ai_toolkit.validation.segmentation_evaluator import SegmentationEvaluator
 
 if TYPE_CHECKING:
     from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
@@ -99,6 +99,8 @@ class MedicalImageTrainer:
         if self.config.task is None:
             raise ValueError("TrainingConfig.task must be set")
 
+        evidence = EvidenceReport(subject=f"Training run: {self.model.__class__.__name__}")
+
         train_ids = self.datasource.get_train_ids()
 
         device = self.config.device
@@ -110,7 +112,7 @@ class MedicalImageTrainer:
             lr=self.config.learning_rate
         )
 
-        run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         run_dir = self.output_dir / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -137,6 +139,17 @@ class MedicalImageTrainer:
 
         val_ids = self.datasource.get_val_ids() if self.datasource.has_partitions() else []
         has_val = len(val_ids) > 0
+
+        evidence.info(
+            f"model={self.model.__class__.__name__}  device={device}"
+            f"  lr={self.config.learning_rate}  optimizer={self.config.optimizer.__name__}"
+            f"  epochs={self.config.epochs}  early_stop={self.config.early_stop}",
+            "TRN-001",
+        )
+        evidence.info(
+            f"train_patients={len(train_ids)}  val_patients={len(val_ids)}",
+            "TRN-008",
+        )
 
         epoch_losses = []
         epochs_without_improvement = 0
@@ -188,7 +201,9 @@ class MedicalImageTrainer:
             # --- Validation pass ---
             val_metrics = {}
             if has_val:
-                val_evaluator = SegmentationEvaluator()
+                val_evaluator = self.config.val_evaluator
+                if val_evaluator is not None:
+                    val_evaluator.reset()
                 val_running_loss = 0.0
                 val_n_samples = 0
 
@@ -205,33 +220,27 @@ class MedicalImageTrainer:
                             loss = task.compute_loss(pred, y)
                             val_running_loss += loss.item()
                             val_n_samples += 1
-                            val_evaluator.update(pred, y)
+                            if val_evaluator is not None:
+                                val_evaluator.update(pred, y)
                 self.model.train()
 
                 val_loss = val_running_loss / max(val_n_samples, 1)
-                seg = val_evaluator.aggregate()
-                val_metrics = {
-                    "val_loss": val_loss,
-                    "val_dice": seg["dice"],
-                    "val_recall": seg["recall"],
-                    "val_precision": seg["precision"],
-                }
+                val_metrics = {"val_loss": val_loss}
+                if val_evaluator is not None:
+                    val_metrics.update(val_evaluator.aggregate())
 
             history_entry = {"epoch": epoch + 1, "loss": epoch_loss, **val_metrics}
             results.history.append(history_entry)
 
             if has_val:
-                vm = val_metrics
-                logger.info(
-                    "  train loss=%.6f  |  val loss=%.6f  dice=%.4f  recall=%.4f  prec=%.4f",
-                    epoch_loss,
-                    vm["val_loss"],
-                    vm["val_dice"],
-                    vm["val_recall"],
-                    vm["val_precision"],
+                logger.info("  train loss=%.6f  |  val loss=%.6f", epoch_loss, val_metrics["val_loss"])
+                evidence.info(
+                    f"epoch={epoch + 1}  loss={epoch_loss:.6f}  val_loss={val_metrics['val_loss']:.6f}",
+                    "TRN-004",
                 )
             else:
                 logger.info("  train loss=%.6f", epoch_loss)
+                evidence.info(f"epoch={epoch + 1}  loss={epoch_loss:.6f}", "TRN-004")
 
             if early_stop:
                 if epoch_loss <= loss_threshold:
@@ -270,6 +279,20 @@ class MedicalImageTrainer:
             json.dump(results.metrics, f, indent=2)
 
         results.artifacts["metrics"] = metrics_path
+
+        # --- Finalise evidence ---
+        evidence.info(
+            f"final_loss={epoch_losses[-1]:.6f}  epochs_trained={epochs_trained}"
+            f"  num_train_samples={len(train_ids)}",
+            "VER-002",
+        )
+        if stop_reason:
+            evidence.warn(f"Early stop triggered: {stop_reason}", "TRN-001")
+
+        evidence_path = results.run_dir / "training_evidence.json"
+        evidence.save(evidence_path)
+        results.artifacts["evidence"] = evidence_path
+        results.evidence_report = evidence
 
         results.mark_training_complete()
 

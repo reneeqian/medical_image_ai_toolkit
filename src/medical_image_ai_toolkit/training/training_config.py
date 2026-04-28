@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 
 from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
+
+if TYPE_CHECKING:
+    from medical_image_ai_toolkit.validation.base_evaluator import BaseEvaluator
 
 
 class TrainingConfig:
@@ -48,6 +51,12 @@ class TrainingConfig:
     plateau_min_delta : float
         Minimum improvement in epoch loss required to reset the plateau
         counter.  Default ``1e-4``.
+    val_evaluator : BaseEvaluator or None
+        Optional evaluator run during the per-epoch validation pass.
+        When ``None`` (default), only ``val_loss`` is recorded — making
+        the trainer task-agnostic.  Supply a task-specific evaluator
+        (e.g. ``SegmentationEvaluator()``) to add extra metrics to the
+        per-epoch history.
     """
 
     def __init__(
@@ -64,6 +73,7 @@ class TrainingConfig:
             loss_threshold: float = 0.01,
             plateau_patience: int = 5,
             plateau_min_delta: float = 1e-4,
+            val_evaluator: BaseEvaluator | None = None,
         ):
 
         self.epochs = epochs
@@ -78,3 +88,4 @@ class TrainingConfig:
         self.loss_threshold = loss_threshold
         self.plateau_patience = plateau_patience
         self.plateau_min_delta = plateau_min_delta
+        self.val_evaluator = val_evaluator
