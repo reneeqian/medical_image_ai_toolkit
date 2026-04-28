@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
+from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
     MedicalImageDataSource,
@@ -147,7 +148,7 @@ class ModelTestingPipeline:
         logger.info("Test partition: %d patient(s)", len(test_ids))
 
         # 2. Prepare run directory and results container
-        run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         run_dir = self.output_dir / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -158,6 +159,14 @@ class ModelTestingPipeline:
             run_dir=run_dir,
         )
         results.mark_testing_start()
+
+        evidence = EvidenceReport(subject=f"Model testing: {self.model.__class__.__name__}")
+        evidence.info(
+            f"model={self.model.__class__.__name__}"
+            f"  evaluator={type(self.evaluator).__name__}"
+            f"  test_patients={len(test_ids)}",
+            "VER-004",
+        )
 
         # 3. Reset evaluator and enter eval mode
         self.evaluator.reset()
@@ -250,6 +259,15 @@ class ModelTestingPipeline:
 
                 loss_str = f"{per_patient_loss:.6f}" if per_patient_loss is not None else "N/A"
                 logger.info("  %s: loss=%s  samples=%d", patient_id, loss_str, patient_samples)
+                metrics_str = "  ".join(
+                    f"{k}={v:.4f}" for k, v in patient_metrics.items()
+                    if isinstance(v, float)
+                )
+                evidence.info(
+                    f"patient={patient_id}  loss={loss_str}  samples={patient_samples}"
+                    + (f"  {metrics_str}" if metrics_str else ""),
+                    "VER-005",
+                )
 
         # 5. Aggregate global metrics from evaluator
         aggregate_metrics = self.evaluator.aggregate()
@@ -282,6 +300,18 @@ class ModelTestingPipeline:
 
         if self.generate_figures:
             results.artifacts.update(self._generate_figures(results, run_dir))
+
+        # 8. Finalise evidence
+        agg_str = "  ".join(
+            f"{k}={v:.6f}" if isinstance(v, float) else f"{k}={v}"
+            for k, v in results.metrics.items()
+        )
+        evidence.info(f"aggregate: {agg_str}", "VER-005")
+
+        evidence_path = run_dir / "model_testing_evidence.json"
+        evidence.save(evidence_path)
+        results.artifacts["evidence"] = evidence_path
+        results.evidence_report = evidence
 
         results.summary()
 

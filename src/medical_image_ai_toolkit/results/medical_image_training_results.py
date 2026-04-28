@@ -11,6 +11,8 @@ import torch
 import torch.nn as nn
 
 if TYPE_CHECKING:
+    from regulatory_tools.evidence.evidence_report import EvidenceReport
+
     from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
         MedicalImageDataSource,
     )
@@ -41,6 +43,7 @@ class MedicalImageTrainingResults:
         self.history: list[dict] = []
         self.metrics: dict[str, Any] = {}
         self.artifacts: dict[str, Path] = {}
+        self.evidence_report: EvidenceReport | None = None
 
         self.training_start_time: datetime | None = None
         self.training_end_time: datetime | None = None
