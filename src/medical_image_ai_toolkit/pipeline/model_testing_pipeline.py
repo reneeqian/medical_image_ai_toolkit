@@ -1,8 +1,13 @@
+from __future__ import annotations
+
+import logging
 import random as _random
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import torch
+from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
     MedicalImageDataSource,
@@ -17,6 +22,13 @@ from medical_image_ai_toolkit.visualizations.model_testing_figures import (
     plot_patient_samples,
     plot_training_curve,
 )
+
+if TYPE_CHECKING:
+    import torch.nn as nn
+
+    from medical_image_ai_toolkit.training.training_config import TrainingConfig
+
+logger = logging.getLogger(__name__)
 
 
 class ModelTestingPipeline:
@@ -55,30 +67,37 @@ class ModelTestingPipeline:
     config : TrainingConfig
         The config object used during training.  ``config.task`` is used
         to generate samples and compute loss.
-    evaluator : BaseEvaluator, optional
+    evaluator : BaseEvaluator or None, optional
         Evaluator instance responsible for accumulating per-sample
         statistics and producing aggregate metrics.  Defaults to
         ``SegmentationEvaluator()``.
-    partitions_path : str | Path, optional
+    partitions_path : str or Path or None, optional
         Path to the ``partitions.json`` produced by the training
         pipeline.  Required when the datasource does not already have
         partitions loaded.
-    output_dir : str | Path, optional
+    output_dir : str or Path or None, optional
         Root directory for model testing artefacts.  Defaults to
         ``artifacts/model_testing_runs``.
+    training_history : list[dict] or None, optional
+        Epoch history from a training run (list of dicts with ``epoch``
+        and ``loss`` keys).  When provided, a training-curve figure is
+        included in the run artefacts.
+    generate_figures : bool, optional
+        Whether to generate PNG figures (confusion matrix, patient
+        samples, training curve).  Default ``True``.
     """
 
     def __init__(
         self,
-        datasource,
-        model,
-        config,
-        evaluator: BaseEvaluator = None,
+        datasource: MedicalImageDataSource,
+        model: nn.Module,
+        config: TrainingConfig,
+        evaluator: BaseEvaluator | None = None,
         partitions_path=None,
         output_dir=None,
-        training_history: list = None,
+        training_history: list[dict] | None = None,
         generate_figures: bool = True,
-    ):
+    ) -> None:
         self.datasource = datasource
         self.model = model
         self.config = config
@@ -110,11 +129,11 @@ class ModelTestingPipeline:
         7. Return a populated MedicalImageModelTestingResults.
         """
 
-        print("\n=== MODEL TESTING PIPELINE START ===")
+        logger.info("=== MODEL TESTING PIPELINE START ===")
 
         # 1. Resolve partitions
         if self.partitions_path is not None:
-            print(f"\nLoading partitions from: {self.partitions_path}")
+            logger.info("Loading partitions from: %s", self.partitions_path)
             MedicalImageDataSource.load_partitions(self.datasource, self.partitions_path)
         elif not self.datasource.has_partitions():
             raise RuntimeError(
@@ -123,13 +142,13 @@ class ModelTestingPipeline:
                 "training run, or ensure the datasource already has partitions loaded."
             )
         else:
-            print("\nUsing in-memory partitions from datasource.")
+            logger.info("Using in-memory partitions from datasource.")
 
         test_ids = self.datasource.get_test_ids()
-        print(f"Test partition: {len(test_ids)} patient(s)")
+        logger.info("Test partition: %d patient(s)", len(test_ids))
 
         # 2. Prepare run directory and results container
-        run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         run_dir = self.output_dir / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -140,6 +159,14 @@ class ModelTestingPipeline:
             run_dir=run_dir,
         )
         results.mark_testing_start()
+
+        evidence = EvidenceReport(subject=f"Model testing: {self.model.__class__.__name__}")
+        evidence.info(
+            f"model={self.model.__class__.__name__}"
+            f"  evaluator={type(self.evaluator).__name__}"
+            f"  test_patients={len(test_ids)}",
+            "VER-004",
+        )
 
         # 3. Reset evaluator and enter eval mode
         self.evaluator.reset()
@@ -161,7 +188,7 @@ class ModelTestingPipeline:
         viz_ids = set(_random.Random(42).sample(test_ids, n_viz))
         _viz_best = {}   # pid -> (score, slice_idx, hu, gt_mask, pred_prob)
 
-        print("\nRunning inference on test patients...")
+        logger.info("Running inference on test patients...")
 
         with torch.no_grad():
 
@@ -231,7 +258,16 @@ class ModelTestingPipeline:
                 total_samples += patient_samples
 
                 loss_str = f"{per_patient_loss:.6f}" if per_patient_loss is not None else "N/A"
-                print(f"  {patient_id}: loss={loss_str}  samples={patient_samples}")
+                logger.info("  %s: loss=%s  samples=%d", patient_id, loss_str, patient_samples)
+                metrics_str = "  ".join(
+                    f"{k}={v:.4f}" for k, v in patient_metrics.items()
+                    if isinstance(v, float)
+                )
+                evidence.info(
+                    f"patient={patient_id}  loss={loss_str}  samples={patient_samples}"
+                    + (f"  {metrics_str}" if metrics_str else ""),
+                    "VER-005",
+                )
 
         # 5. Aggregate global metrics from evaluator
         aggregate_metrics = self.evaluator.aggregate()
@@ -265,9 +301,21 @@ class ModelTestingPipeline:
         if self.generate_figures:
             results.artifacts.update(self._generate_figures(results, run_dir))
 
+        # 8. Finalise evidence
+        agg_str = "  ".join(
+            f"{k}={v:.6f}" if isinstance(v, float) else f"{k}={v}"
+            for k, v in results.metrics.items()
+        )
+        evidence.info(f"aggregate: {agg_str}", "VER-005")
+
+        evidence_path = run_dir / "model_testing_evidence.json"
+        evidence.save(evidence_path)
+        results.artifacts["evidence"] = evidence_path
+        results.evidence_report = evidence
+
         results.summary()
 
-        print("=== MODEL TESTING PIPELINE COMPLETE ===\n")
+        logger.info("=== MODEL TESTING PIPELINE COMPLETE ===")
 
         return results
 
@@ -275,30 +323,31 @@ class ModelTestingPipeline:
     # Internal helpers
     # ---------------------------------------------------------
 
-    def _generate_figures(self, results, run_dir: Path) -> dict:
+    def _generate_figures(self, results: MedicalImageModelTestingResults, run_dir: Path) -> dict:
         artifacts = {}
         try:
             if self.training_history:
                 p = plot_training_curve(self.training_history, run_dir / "training_curve.png")
                 artifacts["training_curve"] = p
-                print(f"Figure saved: {p}")
+                logger.info("Figure saved: %s", p)
         except Exception as e:
-            print(f"Warning: could not generate training curve: {e}")
+            logger.warning("Could not generate training curve: %s", e)
 
         try:
             p = plot_confusion_matrix(results.metrics, run_dir / "confusion_matrix.png")
             artifacts["confusion_matrix"] = p
-            print(f"Figure saved: {p}")
+            logger.info("Figure saved: %s", p)
         except Exception as e:
-            print(f"Warning: could not generate confusion matrix: {e}")
+            logger.warning("Could not generate confusion matrix: %s", e)
 
         try:
             if results.sample_viz_data:
                 p = plot_patient_samples(results.sample_viz_data, run_dir / "patient_samples.png")
-                artifacts["patient_samples"] = p
-                print(f"Figure saved: {p}")
+                if p is not None:
+                    artifacts["patient_samples"] = p
+                    logger.info("Figure saved: %s", p)
         except Exception as e:
-            print(f"Warning: could not generate patient samples figure: {e}")
+            logger.warning("Could not generate patient samples figure: %s", e)
 
         return artifacts
 

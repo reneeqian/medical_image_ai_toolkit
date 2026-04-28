@@ -20,7 +20,8 @@ class DummyTask(TrainingTaskDefinition):
 
 @pytest.mark.requirement("SYS-003")
 @pytest.mark.requirement("TRN-001")
-def test_training_config_initialization():
+def test_training_config_initialization(evidence_output_dir):
+    report = EvidenceReport(subject="TrainingConfig field initialization")
     task = DummyTask()
 
     config = TrainingConfig(
@@ -31,15 +32,24 @@ def test_training_config_initialization():
         task=task,
     )
 
-    assert config.epochs == 5
-    assert config.batch_size == 4
-    assert config.learning_rate == 1e-3
-    assert config.device == "cpu"
-    assert config.task is task
+    if config.epochs != 5:
+        report.error(f"epochs wrong: {config.epochs}", "SYS-003")
+    if config.batch_size != 4:
+        report.error(f"batch_size wrong: {config.batch_size}", "SYS-003")
+    if config.learning_rate != 1e-3:
+        report.error(f"learning_rate wrong: {config.learning_rate}", "SYS-003")
+    if config.device != "cpu":
+        report.error(f"device wrong: {config.device}", "SYS-003")
+    if config.task is not task:
+        report.error("task not stored correctly", "TRN-001")
+
+    report.auto_save("SYS003_TRN001_training_config_init", evidence_output_dir)
+    assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("TRN-007")
-def test_training_config_uses_task_loss_interface():
+def test_training_config_uses_task_loss_interface(evidence_output_dir):
+    report = EvidenceReport(subject="TrainingConfig task loss interface")
     task = DummyTask()
     config = TrainingConfig(task=task)
     loss = config.task.compute_loss(
@@ -47,14 +57,23 @@ def test_training_config_uses_task_loss_interface():
         torch.zeros((1, 1)),
     )
 
-    assert torch.isfinite(loss)
+    if not torch.isfinite(loss):
+        report.error("Task compute_loss returned non-finite value", "TRN-007")
+
+    report.auto_save("TRN007_task_loss_interface", evidence_output_dir)
+    assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("MOD-001")
-def test_training_config_optimizer_class():
+def test_training_config_optimizer_class(evidence_output_dir):
+    report = EvidenceReport(subject="TrainingConfig optimizer class storage")
     config = TrainingConfig(optimizer=torch.optim.Adam)
 
-    assert config.optimizer is torch.optim.Adam
+    if config.optimizer is not torch.optim.Adam:
+        report.error("Optimizer class not stored correctly", "MOD-001")
+
+    report.auto_save("MOD001_training_config_optimizer", evidence_output_dir)
+    assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("TRN-005")

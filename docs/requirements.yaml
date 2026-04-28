@@ -158,7 +158,28 @@ requirements:
       Training workflows shall consume aligned inputs and targets
       through stable task and dataset interfaces rather than embedding
       dataset-specific logic in the trainer.
-      
+
+  - id: TRN-009
+    title: Hyperparameter Space Enumeration
+    description: >
+      HyperparameterSpace shall enumerate trial configurations from a
+      defined parameter grid via full grid search or random sampling,
+      and shall report the total number of candidate combinations.
+
+  - id: TRN-010
+    title: Cross-Trial Partition Consistency
+    description: >
+      All trials in a hyperparameter tuning run shall operate on
+      identical data partitions to ensure fair comparison across
+      trial results.
+
+  - id: TRN-011
+    title: Best Trial Identification
+    description: >
+      The tuning pipeline shall identify and record the best-performing
+      trial by validation loss when a validation partition is present,
+      or by training loss when validation data is unavailable.
+
   # ==============================
   # Model Requirements
   # ==============================

@@ -1,17 +1,22 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import torch.nn as nn
 
 if TYPE_CHECKING:
+    from regulatory_tools.evidence.evidence_report import EvidenceReport
+
     from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
         MedicalImageDataSource,
     )
     from medical_image_ai_toolkit.training.training_config import TrainingConfig
+
+logger = logging.getLogger(__name__)
 
 
 class MedicalImageModelTestingResults:
@@ -57,12 +62,12 @@ class MedicalImageModelTestingResults:
 
         self.run_dir = Path(run_dir)
 
-        self.metrics: dict = {}
-        self.per_patient_results: list = []
-        self.artifacts: dict = {}
-        self.sample_viz_data: list = []   # populated by ModelTestingPipeline for figure generation
+        self.metrics: dict[str, Any] = {}
+        self.per_patient_results: list[dict] = []
+        self.artifacts: dict[str, Path] = {}
+        self.sample_viz_data: list[dict] = []
+        self.evidence_report: EvidenceReport | None = None
 
-        # lifecycle timestamps
         self.testing_start_time: datetime | None = None
         self.testing_end_time: datetime | None = None
 
@@ -155,7 +160,7 @@ class MedicalImageModelTestingResults:
 
     def generate_testing_report(self) -> Path:
         """
-        Writes a JSON report to run_dir and returns its path.
+        Write a JSON report to ``run_dir`` and return its path.
         """
 
         report_path = self.run_dir / "model_testing_report.json"
@@ -169,5 +174,5 @@ class MedicalImageModelTestingResults:
         with open(report_path, "w") as f:
             json.dump(report, f, indent=2)
 
-        print(f"Model testing report written to: {report_path}")
+        logger.info("Model testing report written to: %s", report_path)
         return report_path

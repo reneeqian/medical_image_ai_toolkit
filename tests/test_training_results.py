@@ -387,6 +387,70 @@ def test_results_artifact_registration(tmp_path, evidence_output_dir):
     assert not report.has_errors, report.summary()
 
 
+@pytest.mark.requirement("MOD-002")
+def test_successive_runs_produce_distinct_artifacts(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Successive training runs write to distinct artifact dirs")
+
+    ds = MedicalImageDataSource(tmp_path, SyntheticIngestor())
+    ds.create_partitions(DeterministicSplit())
+
+    config = TrainingConfig(epochs=1, task=DummyTask(), early_stop=False)
+
+    results1 = MedicalImageTrainer(ds, TinyConvNet(), config, output_dir=tmp_path / "runs").train()
+    results2 = MedicalImageTrainer(ds, TinyConvNet(), config, output_dir=tmp_path / "runs").train()
+
+    if results1.run_dir == results2.run_dir:
+        report.error(
+            f"Both runs wrote to the same directory: {results1.run_dir}",
+            "MOD-002",
+        )
+    if not results1.run_dir.exists():
+        report.error(f"Run 1 directory missing: {results1.run_dir}", "MOD-002")
+    if not results2.run_dir.exists():
+        report.error(f"Run 2 directory missing: {results2.run_dir}", "MOD-002")
+
+    report.auto_save("MOD002_successive_runs_distinct_dirs", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("MOD-004")
+def test_exported_model_loads_and_produces_same_output(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="Exported model reloads and produces identical output")
+
+    model = TinyConvNet()
+    model_path = tmp_path / "model.pt"
+
+    class Config: pass
+    class DS: pass
+
+    results = MedicalImageTrainingResults(model, Config(), DS(), tmp_path)
+    results.export_model(model_path)
+
+    if not model_path.exists():
+        report.error("Model was not saved to disk", "MOD-004")
+    else:
+        reloaded = TinyConvNet()
+        reloaded.load_state_dict(torch.load(model_path, weights_only=True))
+        reloaded.eval()
+        model.eval()
+
+        x = torch.randn(1, 1, 32, 32)
+        with torch.no_grad():
+            out_original = model(x)
+            out_reloaded = reloaded(x)
+
+        if not torch.allclose(out_original, out_reloaded):
+            report.error(
+                "Reloaded model output differs from original model output",
+                "MOD-004",
+            )
+
+    report.auto_save("MOD004_exported_model_loads_same_output", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
 @pytest.mark.requirement("DOC-004")
 def test_training_run_records_lifecycle_timestamps(tmp_path, evidence_output_dir):
 

@@ -12,6 +12,7 @@ from medical_image_ai_toolkit.pipeline.training_pipeline import TrainingPipeline
 from medical_image_ai_toolkit.training.medical_image_trainer import MedicalImageTrainer
 from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
 from medical_image_ai_toolkit.training.training_config import TrainingConfig
+from medical_image_ai_toolkit.validation.base_evaluator import BaseEvaluator
 
 from regulatory_tools.evidence.evidence_report import EvidenceReport
 
@@ -335,7 +336,10 @@ def test_training_is_deterministic(
         task=DummyTask(),
     )
 
+    # Reset seed before each model creation so both start from identical weights
+    torch.manual_seed(42)
     model1 = TinyConvNet()
+    torch.manual_seed(42)
     model2 = TinyConvNet()
 
     trainer1 = MedicalImageTrainer(ds1, model1, config)
@@ -638,6 +642,43 @@ def test_early_stop_disabled_runs_all_epochs(tmp_path, evidence_output_dir):
         report.error("early_stop_reason should be None when early_stop=False", "TRN-005")
 
     report.auto_save("TRN005_early_stop_disabled", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("TRN-006")
+@pytest.mark.requirement("TRN-008")
+def test_val_evaluator_metrics_appear_in_history(tmp_path, evidence_output_dir):
+
+    report = EvidenceReport(subject="val_evaluator aggregate metrics appear in epoch history")
+
+    class DummyEvaluator(BaseEvaluator):
+        def update(self, pred, target) -> None:
+            pass
+        def aggregate(self) -> dict:
+            return {"custom_metric": 1.0}
+
+    ds = _create_datasource(tmp_path)
+    ds.create_partitions(DeterministicSplit())
+
+    config = TrainingConfig(
+        epochs=2,
+        task=DummyTask(),
+        early_stop=False,
+        val_evaluator=DummyEvaluator(),
+    )
+
+    results = MedicalImageTrainer(ds, TinyConvNet(), config).train()
+
+    for entry in results.history:
+        if "val_loss" not in entry:
+            report.error(f"val_loss missing from history entry: {entry}", "TRN-006")
+        if "custom_metric" not in entry:
+            report.error(
+                f"custom_metric from val_evaluator missing in history entry: {entry}",
+                "TRN-008",
+            )
+
+    report.auto_save("TRN006_TRN008_val_evaluator_metrics_in_history", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
