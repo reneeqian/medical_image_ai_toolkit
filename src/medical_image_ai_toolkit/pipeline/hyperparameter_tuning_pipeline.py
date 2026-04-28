@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
@@ -96,6 +97,7 @@ class HyperparameterTuningPipeline:
         """Execute all stages and return results."""
 
         logger.info("=== HYPERPARAMETER TUNING START ===")
+        _run_start = time.time()
 
         # 1. Validate dataset (once)
         logger.info("Validating dataset...")
@@ -144,6 +146,15 @@ class HyperparameterTuningPipeline:
         tuning_run_dir = self.output_dir / run_ts
         tuning_run_dir.mkdir(parents=True, exist_ok=True)
 
+        _W = 68
+        print("\n" + "=" * _W)
+        print(f"  HYPERPARAMETER TUNING  |  {len(trial_params_list)} trial(s)  |  {self.search_strategy} search")
+        print("=" * _W)
+        for k, v in self.space._params.items():
+            print(f"  {k}: {v}")
+        print(f"  output: {tuning_run_dir}")
+        print("-" * _W)
+
         # 4. Trial loop
         trial_results: list[TrialResult] = []
         trial_models: list[nn.Module] = []
@@ -153,6 +164,9 @@ class HyperparameterTuningPipeline:
             logger.info("--- Trial %d/%d  params=%s ---", trial_id, len(trial_params_list) - 1, params)
             trial_dir = tuning_run_dir / f"trial_{trial_id:03d}"
             trial_dir.mkdir(parents=True, exist_ok=True)
+
+            print(f"\n[Trial {trial_id + 1}/{len(trial_params_list)}]  {params}")
+            _trial_start = time.time()
 
             model, config = self.trial_factory(params)
 
@@ -169,11 +183,31 @@ class HyperparameterTuningPipeline:
             trial_models.append(model)
             trial_configs.append(config)
 
+            _trial_elapsed = time.time() - _trial_start
             val_str = (
                 f"{trial_result.best_val_loss:.6f}"
                 if trial_result.best_val_loss is not None
                 else "—"
             )
+            print(
+                f"  -> loss={trial_result.final_loss:.6f}"
+                f"  val_loss={val_str}"
+                f"  epochs={trial_result.epochs_trained}"
+                f"  ({_trial_elapsed:.1f}s)"
+            )
+
+            # Running leaderboard
+            sorted_results = sorted(
+                trial_results,
+                key=lambda t: (t.best_val_loss if t.best_val_loss is not None else t.final_loss),
+            )
+            print(f"\n  {'#':<5} {'params':<30} {'loss':<12} {'val_loss':<12} {'epochs'}")
+            print(f"  {'-'*5} {'-'*30} {'-'*12} {'-'*12} {'-'*6}")
+            for rank, t in enumerate(sorted_results):
+                v = f"{t.best_val_loss:.6f}" if t.best_val_loss is not None else "—"
+                marker = " *" if t.trial_id == sorted_results[0].trial_id else ""
+                print(f"  {rank + 1:<5} {str(t.params):<30} {t.final_loss:<12.6f} {v:<12} {t.epochs_trained}{marker}")
+
             logger.info(
                 "Trial %d complete: final_loss=%.6f  best_val_loss=%s",
                 trial_id,
@@ -234,6 +268,22 @@ class HyperparameterTuningPipeline:
         tuning_evidence.save(evidence_path)
         tuning_results.artifacts["evidence"] = evidence_path
         tuning_results.evidence_report = tuning_evidence
+
+        _run_elapsed = time.time() - _run_start
+        print("\n" + "=" * _W)
+        if best_trial is not None:
+            best_metric = best_trial.best_val_loss if best_trial.best_val_loss is not None else best_trial.final_loss
+            metric_label = "val_loss" if best_trial.best_val_loss is not None else "loss"
+            print(
+                f"  TUNING COMPLETE  |  {len(trial_results)} trial(s)  |  {_run_elapsed:.1f}s total"
+            )
+            print(
+                f"  best trial: #{best_trial.trial_id + 1}  {metric_label}={best_metric:.6f}  params={best_trial.params}"
+            )
+        else:
+            print(f"  TUNING COMPLETE  |  0 trials  |  {_run_elapsed:.1f}s total")
+        print(f"  report: {report_path}")
+        print("=" * _W + "\n")
 
         logger.info("=== HYPERPARAMETER TUNING COMPLETE ===")
         return tuning_results

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import random
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -154,6 +155,7 @@ class MedicalImageTrainer:
         epoch_losses = []
         epochs_without_improvement = 0
         stop_reason = None
+        _epoch_start = time.time()
 
         for epoch in range(self.config.epochs):
 
@@ -232,14 +234,27 @@ class MedicalImageTrainer:
             history_entry = {"epoch": epoch + 1, "loss": epoch_loss, **val_metrics}
             results.history.append(history_entry)
 
+            elapsed = time.time() - _epoch_start
+            _epoch_start = time.time()
             if has_val:
                 logger.info("  train loss=%.6f  |  val loss=%.6f", epoch_loss, val_metrics["val_loss"])
+                print(
+                    f"  epoch {epoch + 1}/{self.config.epochs}"
+                    f"  loss={epoch_loss:.6f}"
+                    f"  val_loss={val_metrics['val_loss']:.6f}"
+                    f"  ({elapsed:.1f}s)"
+                )
                 evidence.info(
                     f"epoch={epoch + 1}  loss={epoch_loss:.6f}  val_loss={val_metrics['val_loss']:.6f}",
                     "TRN-004",
                 )
             else:
                 logger.info("  train loss=%.6f", epoch_loss)
+                print(
+                    f"  epoch {epoch + 1}/{self.config.epochs}"
+                    f"  loss={epoch_loss:.6f}"
+                    f"  ({elapsed:.1f}s)"
+                )
                 evidence.info(f"epoch={epoch + 1}  loss={epoch_loss:.6f}", "TRN-004")
 
             if early_stop:
@@ -264,6 +279,7 @@ class MedicalImageTrainer:
         epochs_trained = len(epoch_losses)
         if stop_reason:
             logger.info("Early stop after epoch %d: %s", epochs_trained, stop_reason)
+            print(f"  [early stop] {stop_reason}")
 
         results.metrics = {
             "final_loss": epoch_losses[-1],
