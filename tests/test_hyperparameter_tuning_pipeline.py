@@ -362,3 +362,64 @@ def test_tuning_pipeline_generates_report(tmp_path, evidence_output_dir):
 
     report.auto_save("TRN004_tuning_pipeline_generates_report", evidence_output_dir)
     assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("TRN-011")
+def test_tuning_results_summary_prints_trial_table(tmp_path, evidence_output_dir):
+    from medical_image_ai_toolkit.results.hyperparameter_tuning_results import (
+        HyperparameterTuningResults,
+        TrialResult,
+    )
+
+    report = EvidenceReport(subject="HyperparameterTuningResults.summary prints trial table and best-trial section")
+
+    # Case 1: trial with val_loss — covers the table rows and best_val_loss branch
+    trial = TrialResult(
+        trial_id=0,
+        params={"lr": 0.001, "base_channels": 16},
+        final_loss=0.5,
+        best_val_loss=0.4,
+        epochs_trained=3,
+        early_stop_reason=None,
+        run_dir=tmp_path,
+    )
+    HyperparameterTuningResults(
+        trial_results=[trial],
+        best_trial=trial,
+        best_model=None,
+        best_config=None,
+        artifacts={},
+        output_dir=tmp_path,
+    ).summary()
+
+    # Case 2: trial without val_loss — covers the final_loss fallback branch
+    trial_no_val = TrialResult(
+        trial_id=1,
+        params={"lr": 0.01},
+        final_loss=0.8,
+        best_val_loss=None,
+        epochs_trained=2,
+        early_stop_reason=None,
+        run_dir=tmp_path,
+    )
+    HyperparameterTuningResults(
+        trial_results=[trial_no_val],
+        best_trial=trial_no_val,
+        best_model=None,
+        best_config=None,
+        artifacts={},
+        output_dir=tmp_path,
+    ).summary()
+
+    # Case 3: empty trial list — covers the early-return branch
+    HyperparameterTuningResults(
+        trial_results=[],
+        best_trial=None,
+        best_model=None,
+        best_config=None,
+        artifacts={},
+        output_dir=tmp_path,
+    ).summary()
+
+    report.auto_save("TRN011_tuning_results_summary", evidence_output_dir)
+    assert not report.has_errors, report.summary()

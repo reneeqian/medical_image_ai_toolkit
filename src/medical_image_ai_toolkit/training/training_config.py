@@ -57,6 +57,11 @@ class TrainingConfig:
         the trainer task-agnostic.  Supply a task-specific evaluator
         (e.g. ``SegmentationEvaluator()``) to add extra metrics to the
         per-epoch history.
+    checkpoint_every : int
+        Save a checkpoint after every N epochs.  ``0`` (default) disables
+        checkpointing.  ``1`` saves after every epoch.  Each checkpoint is
+        written to ``run_dir/checkpoint_epoch_{N:03d}.pt``; the most recent
+        is also mirrored to ``run_dir/checkpoint_latest.pt`` for easy resumption.
     """
 
     def __init__(
@@ -74,6 +79,7 @@ class TrainingConfig:
             plateau_patience: int = 5,
             plateau_min_delta: float = 1e-4,
             val_evaluator: BaseEvaluator | None = None,
+            checkpoint_every: int = 0,
         ):
 
         self.epochs = epochs
@@ -89,3 +95,4 @@ class TrainingConfig:
         self.plateau_patience = plateau_patience
         self.plateau_min_delta = plateau_min_delta
         self.val_evaluator = val_evaluator
+        self.checkpoint_every = checkpoint_every

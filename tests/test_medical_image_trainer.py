@@ -722,3 +722,118 @@ def test_training_pipeline_stops_on_dataset_validation_errors(tmp_path, evidence
         evidence_output_dir
     )
     assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("TRN-004")
+@pytest.mark.requirement("SYS-002")
+def test_training_pipeline_full_run(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="TrainingPipeline full run produces model and partition artifacts")
+
+    ds = _create_datasource(tmp_path)
+
+    config = TrainingConfig(
+        epochs=1,
+        task=DummyTask(),
+        split_strategy=DeterministicSplit(),
+        early_stop=False,
+    )
+
+    pipeline = TrainingPipeline(
+        datasource=ds,
+        model=TinyConvNet(),
+        config=config,
+        output_dir=tmp_path / "pipeline_output",
+    )
+
+    outputs = pipeline.run()
+    results = outputs["results"]
+
+    model_path = results.artifacts.get("model")
+    partitions_path = results.artifacts.get("partitions")
+
+    if not model_path or not Path(model_path).exists():
+        report.error("model artifact not written", "TRN-004")
+    if not partitions_path or not Path(partitions_path).exists():
+        report.error("partitions artifact not written", "TRN-004")
+
+    report.auto_save("TRN004_SYS002_training_pipeline_full_run", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("MOD-002")
+def test_checkpoint_save_creates_files(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="checkpoint_every=1 writes per-epoch and latest checkpoint files")
+
+    ds = _create_datasource(tmp_path)
+    ds.create_partitions(DeterministicSplit())
+
+    config = TrainingConfig(
+        epochs=2,
+        task=DummyTask(),
+        early_stop=False,
+        checkpoint_every=1,
+    )
+
+    trainer = MedicalImageTrainer(ds, TinyConvNet(), config, output_dir=tmp_path / "ckpts")
+    results = trainer.train()
+    run_dir = results.run_dir
+
+    if not (run_dir / "checkpoint_epoch_001.pt").exists():
+        report.error("checkpoint_epoch_001.pt not created", "MOD-002")
+    if not (run_dir / "checkpoint_epoch_002.pt").exists():
+        report.error("checkpoint_epoch_002.pt not created", "MOD-002")
+    if not (run_dir / "checkpoint_latest.pt").exists():
+        report.error("checkpoint_latest.pt not created", "MOD-002")
+
+    report.auto_save("MOD002_checkpoint_save_creates_files", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("MOD-004")
+def test_checkpoint_resume_continues_from_saved_epoch(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="Training resumes from checkpoint and completes remaining epochs")
+
+    ds = _create_datasource(tmp_path)
+    ds.create_partitions(DeterministicSplit())
+
+    # First run: train 1 epoch and save a checkpoint
+    config1 = TrainingConfig(
+        epochs=1, task=DummyTask(), early_stop=False, checkpoint_every=1
+    )
+    trainer1 = MedicalImageTrainer(ds, TinyConvNet(), config1, output_dir=tmp_path / "r1")
+    results1 = trainer1.train()
+    checkpoint = results1.run_dir / "checkpoint_latest.pt"
+
+    # Second run: resume; 2 total epochs, 1 already done → 1 more runs
+    config2 = TrainingConfig(epochs=2, task=DummyTask(), early_stop=False)
+    trainer2 = MedicalImageTrainer(
+        ds, TinyConvNet(), config2,
+        output_dir=tmp_path / "r2",
+        resume_from=checkpoint,
+    )
+    results2 = trainer2.train()
+
+    # epoch_losses restored from checkpoint (1 entry) + 1 new = 2 total
+    epochs_trained = results2.metrics.get("epochs_trained")
+    if epochs_trained != 2:
+        report.error(
+            f"Expected 2 total epoch entries after resume, got {epochs_trained}",
+            "MOD-004",
+        )
+
+    report.auto_save("MOD004_checkpoint_resume", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("SYS-003")
+def test_sanity_check_reports_partition_sizes(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="Sanity check reports partition sizes when partitions exist")
+
+    ds = _create_datasource(tmp_path)
+    ds.create_partitions(DeterministicSplit())
+
+    trainer = MedicalImageTrainer(ds, TinyConvNet(), TrainingConfig())
+    trainer.sanity_check()
+
+    report.auto_save("SYS003_sanity_check_with_partitions", evidence_output_dir)
+    assert not report.has_errors, report.summary()
