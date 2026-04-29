@@ -56,16 +56,16 @@ python runtests.py   # also generates traceability matrix and forge health repor
 ## Forge Health
 
 <!-- forge-health-start -->
-*Last run: 2026-04-27*
+*Last run: 2026-04-29*
 
-**Grade: B** (score: 0.87)
+**Grade: B** (score: 0.90)
 
 | Collector | Score |
 |-----------|-------|
-| Test Metrics | 0.86 |
-| Complexity | 0.78 |
+| Test Metrics | 0.91 |
+| Complexity | 0.74 |
 | Dependency Health | 1.00 |
-| Requirements Coverage | 0.90 |
-| Static Analysis | 0.65 |
-| Type Coverage | 0.97 |
+| Requirements Coverage | 1.00 |
+| Static Analysis | 0.71 |
+| Type Coverage | 0.96 |
 <!-- forge-health-end -->
