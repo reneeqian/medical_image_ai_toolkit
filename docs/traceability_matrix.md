@@ -4,13 +4,30 @@
 
 ## Requirement Coverage
 
-**Coverage:** 100.0% (43 / 43 requirements tested)
+**Coverage:** 100.0% (45 / 45 requirements tested)
 
 ## Code Coverage
 
-**Line Coverage:** 90.4%
+**Line Coverage:** 91.5%
 
 Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
+
+## Forge Code Health
+
+**Overall Score:** 91.6%  **Grade:** A
+
+*Generated at 2026-05-04T02:24:21.779994+00:00*
+
+| Collector | Score | Status |
+|-----------|-------|--------|
+| Test Metrics | 91.5% | ok |
+| Complexity | — | radon not found — install it with: pip install radon |
+| Dependency Health | — | Could not parse pip-audit output |
+| Requirements Coverage | 100.0% | ok |
+| Static Analysis | 71.4% | ok |
+| Type Coverage | 100.0% | ok |
+| Dead Code | 100.0% | ok |
+| Mutation Testing | — | Disabled by default; set [collectors.mutation_testing] enabled = true in forge.toml |
 
 | Requirement ID | Title | Linked Tests | Evidence Artifacts | Status |
 |----------------|-------------|--------------|--------------------|--------|
@@ -34,6 +51,8 @@ Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 | MOD-004 | Model Artifact Loading | tests/test_medical_image_trainer.py::test_checkpoint_resume_continues_from_saved_epoch, tests/test_training_results.py::test_exported_model_loads_and_produces_same_output |  | LINKED |
 | MOD-005 | Model Export Support | tests/test_training_results.py::test_export_model_failure, tests/test_training_results.py::test_training_results_artifact_generation |  | LINKED |
 | MOD-006 | Inference Execution Support | tests/test_training_results.py::test_inference_determinism, tests/test_training_results.py::test_results_inference |  | LINKED |
+| REP-001 | Run Report PDF Generation | tests/test_reporting.py::test_generate_model_testing_pdf_creates_file, tests/test_reporting.py::test_generate_training_pdf_creates_file, tests/test_reporting.py::test_generate_training_pdf_with_val_loss_in_history, tests/test_reporting.py::test_generate_tuning_pdf_creates_file |  | LINKED |
+| REP-002 | Run Discovery | tests/test_reporting.py::test_find_run_dir_partial_prefix_match, tests/test_reporting.py::test_find_run_dir_raises_on_empty, tests/test_reporting.py::test_find_run_dir_returns_by_exact_id, tests/test_reporting.py::test_find_run_dir_returns_most_recent | REP002_find_run_dir_raises_on_empty_20260503_192419_039354.json | PASS |
 | SYS-001 | Dataset Interface Consistency | tests/test_datasource_contract.py::test_dataset_partition_generation, tests/test_datasource_contract.py::test_datasource_behaviors |  | LINKED |
 | SYS-002 | Training Pipeline Orchestration | tests/test_medical_image_trainer.py::test_trainer_sanity_check, tests/test_medical_image_trainer.py::test_training_pipeline_full_run, tests/test_medical_image_trainer.py::test_training_pipeline_generates_artifacts, tests/test_medical_image_trainer.py::test_training_with_no_patients, tests/test_medical_image_trainer.py::test_training_without_partitions_fails |  | LINKED |
 | SYS-003 | Pipeline Configuration Interface | tests/test_medical_image_trainer.py::test_sanity_check_reports_partition_sizes, tests/test_medical_image_trainer.py::test_trainer_sanity_check, tests/test_training_config.py::test_training_config_initialization |  | LINKED |
@@ -41,13 +60,13 @@ Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 | SYS-005 | Explicit Dataset Validation | tests/test_medical_image_trainer.py::test_training_pipeline_stops_on_dataset_validation_errors |  | LINKED |
 | TRN-001 | Configurable Training Execution | tests/test_medical_image_trainer.py::test_training_respects_device, tests/test_medical_image_trainer.py::test_training_without_task_fails, tests/test_training_config.py::test_training_config_initialization |  | LINKED |
 | TRN-002 | Hyperparameter Sweep Support | tests/test_hyperparameter_tuning_pipeline.py::test_tuning_pipeline_runs_all_grid_trials |  | LINKED |
-| TRN-003 | Training Shall Detect Nan Loss | tests/test_medical_image_trainer.py::test_training_detects_nan_loss | TRN003_nan_loss_detection_20260428_170348_481599.json | PASS |
+| TRN-003 | Training Shall Detect Nan Loss | tests/test_medical_image_trainer.py::test_training_detects_nan_loss | TRN003_nan_loss_detection_20260503_192417_644429.json | PASS |
 | TRN-004 | Training Run Artifact Generation | tests/test_hyperparameter_tuning_pipeline.py::test_tuning_pipeline_generates_report, tests/test_medical_image_trainer.py::test_training_pipeline_full_run, tests/test_medical_image_trainer.py::test_training_pipeline_generates_artifacts |  | LINKED |
 | TRN-005 | Training Checkpoint Support | tests/test_medical_image_trainer.py::test_early_stop_disabled_runs_all_epochs, tests/test_medical_image_trainer.py::test_early_stop_loss_threshold_halts_training, tests/test_medical_image_trainer.py::test_early_stop_plateau_halts_training, tests/test_training_config.py::test_training_config_early_stop_can_be_disabled, tests/test_training_config.py::test_training_config_early_stop_custom_values, tests/test_training_config.py::test_training_config_early_stop_defaults |  | LINKED |
 | TRN-006 | Deterministic Training Initialization | tests/test_medical_image_trainer.py::test_training_is_deterministic, tests/test_medical_image_trainer.py::test_val_evaluator_metrics_appear_in_history |  | LINKED |
 | TRN-007 | Loss Function Configuration | tests/test_task_definition.py::test_task_compute_loss, tests/test_training_config.py::test_training_config_uses_task_loss_interface |  | LINKED |
 | TRN-008 | Training Input Interface | tests/test_medical_image_trainer.py::test_val_evaluator_metrics_appear_in_history, tests/test_task_definition.py::test_postprocess_prediction_identity, tests/test_task_definition.py::test_task_generates_aligned_samples |  | LINKED |
-| TRN-009 | Hyperparameter Space Enumeration | tests/test_hyperparameter_tuning_pipeline.py::test_hyperparameter_space_grid_enumerates_all_combinations, tests/test_hyperparameter_tuning_pipeline.py::test_hyperparameter_space_random_sample, tests/test_hyperparameter_tuning_pipeline.py::test_tuning_pipeline_random_search_requires_n_trials, tests/test_hyperparameter_tuning_pipeline.py::test_tuning_pipeline_random_search_runs_n_trials | TRN009_random_search_requires_n_trials_20260428_170348_402037.json | PASS |
+| TRN-009 | Hyperparameter Space Enumeration | tests/test_hyperparameter_tuning_pipeline.py::test_hyperparameter_space_grid_enumerates_all_combinations, tests/test_hyperparameter_tuning_pipeline.py::test_hyperparameter_space_random_sample, tests/test_hyperparameter_tuning_pipeline.py::test_tuning_pipeline_random_search_requires_n_trials, tests/test_hyperparameter_tuning_pipeline.py::test_tuning_pipeline_random_search_runs_n_trials | TRN009_random_search_requires_n_trials_20260503_192417_572083.json | PASS |
 | TRN-010 | Cross-Trial Partition Consistency | tests/test_hyperparameter_tuning_pipeline.py::test_tuning_pipeline_runs_all_grid_trials |  | LINKED |
 | TRN-011 | Best Trial Identification | tests/test_hyperparameter_tuning_pipeline.py::test_tuning_pipeline_selects_best_trial, tests/test_hyperparameter_tuning_pipeline.py::test_tuning_results_summary_prints_trial_table |  | LINKED |
 | VER-001 | Deterministic Training Behavior | tests/test_deterministic_split.py::test_different_seeds_produce_different_splits, tests/test_deterministic_split.py::test_split_is_deterministic, tests/test_medical_image_trainer.py::test_training_is_deterministic |  | LINKED |
@@ -63,8 +82,8 @@ Detailed uncovered lines saved in `artifacts/coverage/uncovered_lines.txt`
 
 
 ---
-Total Requirements: 43
+Total Requirements: 45
 
-Tested: 43
+Tested: 45
 
 Failures: 0
