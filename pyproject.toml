@@ -12,7 +12,7 @@ dependencies = [
     "numpy",
     "torch",
     "matplotlib",
-    "forge-utils @ file:///Users/reneeqian/Documents/PythonStuff/Utilities/forge",
+    "forge-utils @ git+https://github.com/reneeqian/forge.git@main",
 ]
 [tool.setuptools]
 package-dir = {"" = "src"}
