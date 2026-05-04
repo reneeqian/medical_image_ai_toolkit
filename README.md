@@ -55,17 +55,7 @@ python runtests.py   # also generates traceability matrix and forge health repor
 
 ## Forge Health
 
+Latest report: see the [Actions tab](../../actions) or the job summary on any PR's Checks tab.
+
 <!-- forge-health-start -->
-*Last run: 2026-05-04*
-
-**Grade: B** (score: 0.90)
-
-| Collector | Score |
-|-----------|-------|
-| Test Metrics | 0.91 |
-| Complexity | 0.74 |
-| Dependency Health | 1.00 |
-| Requirements Coverage | 1.00 |
-| Static Analysis | 0.71 |
-| Type Coverage | 0.96 |
 <!-- forge-health-end -->
