@@ -1,0 +1,20 @@
+soup:
+  - name: numpy
+    version: "2.2.6"
+    purpose: "Array operations for image volume manipulation and data contracts"
+    license: BSD-3-Clause
+
+  - name: torch
+    version: "2.9.1"
+    purpose: "Deep learning model training, inference, and evaluation pipelines"
+    license: BSD-3-Clause
+
+  - name: matplotlib
+    version: "3.10.8"
+    purpose: "Visualization for training plots, confusion matrices, and PDF reports"
+    license: PSF
+
+  - name: forge-utils
+    version: "main"
+    purpose: "Regulatory health grading and traceability infrastructure"
+    license: Internal
