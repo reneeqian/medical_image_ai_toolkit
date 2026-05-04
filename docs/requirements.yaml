@@ -72,6 +72,14 @@ requirements:
       When slice-level training is used, derived samples shall remain
       aligned with their patient-level dataset membership.
 
+  - id: DAT-011
+    title: Dataset Validator Behaviour
+    description: >
+      DatasetValidator.run() shall iterate all patient IDs, enforce the
+      PatientSample contract for each, and aggregate results into a single
+      EvidenceReport. Load failures shall be recorded as errors without
+      aborting the remaining patients.
+
   # ==============================
   # System-Level Requirements
   # ==============================
@@ -292,3 +300,24 @@ requirements:
     description: >
       The toolkit shall support generation of structured run reports.
     tags: [documentation]
+
+# ==============================
+# Reporting Requirements
+# ==============================
+
+  - id: REP-001
+    title: Run Report PDF Generation
+    description: >
+      The toolkit shall provide functions to generate PDF reports for
+      training, hyperparameter tuning, and model testing runs. Each PDF
+      shall include summary metrics, configuration details, and plots
+      derived from existing run artifacts.
+    tags: [reporting, visualization]
+
+  - id: REP-002
+    title: Run Discovery
+    description: >
+      Run-report functions shall accept an optional run_id and default to
+      the most recent run when no ID is provided. A FileNotFoundError
+      shall be raised when no matching runs exist.
+    tags: [reporting]
