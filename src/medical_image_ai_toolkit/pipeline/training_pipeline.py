@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
 import logging
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from regulatory_tools.evidence.evidence_report import EvidenceReport
@@ -144,6 +147,8 @@ class TrainingPipeline:
 
         results.export_model(model_path)
         results.artifacts["model"] = model_path
+        manifest_path = _write_model_manifest(results, model_path)
+        results.artifacts["manifest"] = manifest_path
         partitions_path = self.datasource.save_partitions(results.run_dir)
         results.artifacts["partitions"] = partitions_path
         results.generate_training_report()
@@ -181,3 +186,23 @@ class TrainingPipeline:
             "results": results,
             "evidence": pipeline_evidence,
         }
+
+
+def _write_model_manifest(results, model_path: Path) -> Path:
+    manifest = {
+        "model_class": type(results.model).__name__,
+        "param_count": sum(p.numel() for p in results.model.parameters()),
+        "run_id": results.run_dir.name,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "training_config": {
+            "epochs": results.config.epochs,
+            "learning_rate": results.config.learning_rate,
+            "optimizer": getattr(results.config.optimizer, "__name__", str(results.config.optimizer)),
+            "batch_size": results.config.batch_size,
+            "task": type(results.config.task).__name__,
+        },
+        "metrics": results.metrics,
+    }
+    manifest_path = model_path.parent / "model_manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2, default=str))
+    return manifest_path

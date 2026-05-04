@@ -72,6 +72,14 @@ requirements:
       When slice-level training is used, derived samples shall remain
       aligned with their patient-level dataset membership.
 
+  - id: DAT-011
+    title: Dataset Validator Behaviour
+    description: >
+      DatasetValidator.run() shall iterate all patient IDs, enforce the
+      PatientSample contract for each, and aggregate results into a single
+      EvidenceReport. Load failures shall be recorded as errors without
+      aborting the remaining patients.
+
   # ==============================
   # System-Level Requirements
   # ==============================
