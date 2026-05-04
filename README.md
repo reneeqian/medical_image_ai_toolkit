@@ -18,6 +18,32 @@ Implement three extension points to build a project on top of the toolkit:
 
 Pass a `TrainingConfig(task=..., split_strategy=...)` to `TrainingPipeline.run()`, then `ModelTestingPipeline.run()` to evaluate the saved model.
 
+## Run Reports
+
+Generate a multi-page PDF report from any existing run directory:
+
+```python
+from medical_image_ai_toolkit.reporting import (
+    generate_training_pdf,
+    generate_tuning_pdf,
+    generate_model_testing_pdf,
+)
+
+# Most recent run (default)
+pdf = generate_training_pdf("artifacts/training_runs")
+
+# Specific run by ID or date prefix
+pdf = generate_tuning_pdf("artifacts/tuning_runs", run_id="20260427")
+
+# Custom output path
+pdf = generate_model_testing_pdf("artifacts/model_testing_runs",
+                                  output_path="/tmp/report.pdf")
+```
+
+Each PDF includes a title/summary page, training-curve or metric plots, and a
+configuration table. Output defaults to `{run_dir}/training_report.pdf` (or
+`tuning_report.pdf` / `model_testing_report.pdf`).
+
 ## Tests
 
 ```bash
@@ -30,16 +56,16 @@ python runtests.py   # also generates traceability matrix and forge health repor
 ## Forge Health
 
 <!-- forge-health-start -->
-*Last run: 2026-04-27*
+*Last run: 2026-05-04*
 
-**Grade: B** (score: 0.87)
+**Grade: B** (score: 0.90)
 
 | Collector | Score |
 |-----------|-------|
-| Test Metrics | 0.86 |
-| Complexity | 0.78 |
+| Test Metrics | 0.91 |
+| Complexity | 0.74 |
 | Dependency Health | 1.00 |
-| Requirements Coverage | 0.90 |
-| Static Analysis | 0.65 |
-| Type Coverage | 0.97 |
+| Requirements Coverage | 1.00 |
+| Static Analysis | 0.71 |
+| Type Coverage | 0.96 |
 <!-- forge-health-end -->
