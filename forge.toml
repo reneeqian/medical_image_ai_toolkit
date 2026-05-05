@@ -1,2 +1,5 @@
 [test_runner]
 python = "python"
+
+[requirements_coverage]
+tag_pattern = "[A-Z]+-\\d+"
