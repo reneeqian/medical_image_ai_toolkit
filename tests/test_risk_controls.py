@@ -90,7 +90,7 @@ def test_nan_loss_halts_training_with_runtime_error(tmp_path, evidence_output_di
     )
 
     ingestor = _SyntheticIngestor(inject_nan=True)
-    ds = MedicalImageDataSource(ingestor)
+    ds = MedicalImageDataSource(tmp_path, ingestor)
     ds.create_partitions(_FixedSplit())
 
     trainer = MedicalImageTrainer(
@@ -130,7 +130,7 @@ def test_model_manifest_contains_required_fields(tmp_path, evidence_output_dir):
     )
 
     ingestor = _SyntheticIngestor()
-    ds = MedicalImageDataSource(ingestor)
+    ds = MedicalImageDataSource(tmp_path, ingestor)
 
     pipeline_out = TrainingPipeline(
         datasource=ds,
@@ -162,14 +162,14 @@ def test_model_manifest_contains_required_fields(tmp_path, evidence_output_dir):
 
 
 @pytest.mark.requirement("RSK-003")
-def test_train_test_partition_no_overlap(evidence_output_dir):
+def test_train_test_partition_no_overlap(tmp_path, evidence_output_dir):
     """RSK-003: train and test partitions shall have no patient identity overlap."""
     report = EvidenceReport(
         subject="RSK-003: evaluation partition isolation — no train/test overlap"
     )
 
     ingestor = _SyntheticIngestor(n_patients=10)
-    ds = MedicalImageDataSource(ingestor)
+    ds = MedicalImageDataSource(tmp_path, ingestor)
     ds.create_partitions(DeterministicHoldoutSplit(val_fraction=0.2, test_fraction=0.2))
 
     train_ids = set(ds.train_ids)
