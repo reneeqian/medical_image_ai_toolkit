@@ -33,7 +33,7 @@ from regulatory_tools.evidence.evidence_report import EvidenceReport
 class _TinyNet(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.fc = torch.nn.Linear(4, 1)
+        self.fc = torch.nn.Linear(64, 1)  # 8×8 synthetic slices → 64 features
 
     def forward(self, x):
         return self.fc(x.view(x.size(0), -1))
@@ -55,7 +55,7 @@ class _SyntheticIngestor:
             patient_id=patient_id,
             image_volume=volume,
             spacing=(1.0, 1.0, 1.0),
-            annotations=AnnotationBundle(rois={}),
+            annotations=AnnotationBundle(vector_rois=None),
         )
 
     def get_sample(self, patient_id: str) -> PatientSample:
@@ -170,7 +170,7 @@ def test_train_test_partition_no_overlap(tmp_path, evidence_output_dir):
 
     ingestor = _SyntheticIngestor(n_patients=10)
     ds = MedicalImageDataSource(tmp_path, ingestor)
-    ds.create_partitions(DeterministicHoldoutSplit(val_fraction=0.2, test_fraction=0.2))
+    ds.create_partitions(DeterministicHoldoutSplit(train=0.6, val=0.2))
 
     train_ids = set(ds.train_ids)
     test_ids = set(ds.test_ids)
