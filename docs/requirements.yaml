@@ -321,3 +321,31 @@ requirements:
       the most recent run when no ID is provided. A FileNotFoundError
       shall be raised when no matching runs exist.
     tags: [reporting]
+
+  # ==============================
+  # Risk Control Requirements
+  # ==============================
+
+  - id: RSK-001
+    title: Non-Finite Loss Detection
+    description: >
+      The training pipeline shall detect non-finite (NaN or Inf) loss values
+      during optimization and halt with a defined exception rather than silently
+      propagating numerical corruption through model weights.
+    tags: [risk_control, numerical_stability, training]
+
+  - id: RSK-002
+    title: Model Artifact Integrity
+    description: >
+      Persisted model artifacts shall be associated with a manifest recording
+      model class, parameter count, and training configuration so that
+      artifact-model mismatches can be detected at load time.
+    tags: [risk_control, model_integrity, artifact]
+
+  - id: RSK-003
+    title: Evaluation Partition Isolation
+    description: >
+      Evaluation and testing workflows shall operate only on the designated
+      test partition. Overlap between training and evaluation partitions shall
+      be detectable via the VER-003 dataset separation test.
+    tags: [risk_control, data_leakage, evaluation]
