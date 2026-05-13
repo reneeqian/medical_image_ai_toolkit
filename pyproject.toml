@@ -14,6 +14,15 @@ dependencies = [
     "matplotlib==3.10.8",
     "forge-utils @ git+https://github.com/reneeqian/forge.git@v0.1.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "radon",
+    "pip-audit",
+]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 

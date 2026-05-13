@@ -3,6 +3,7 @@ import yaml
 from pathlib import Path
 
 from regulatory_tools.evidence.evidence_report import EvidenceReport
+from regulatory_tools.quality.soup_checker import check_soup_inventory
 
 
 @pytest.mark.requirement("DOC-001")
@@ -131,6 +132,45 @@ def test_project_documentation_structure(
         evidence_output_dir,
     )
 
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("DOC-001")
+def test_soup_inventory_complete(
+    request,
+    evidence_output_dir,
+):
+    """Verify docs/soup.yaml exists and covers all declared pyproject.toml dependencies."""
+    project_root = Path(__file__).resolve().parents[1]
+
+    report = EvidenceReport(
+        subject="SOUP Inventory → All Dependencies Declared",
+        test_id=request.node.nodeid,
+    )
+
+    result = check_soup_inventory(project_root)
+
+    if not result["found"]:
+        report.error(
+            "docs/soup.yaml not found — all third-party dependencies must be inventoried",
+            "DOC-001",
+            context=str(project_root / "docs" / "soup.yaml"),
+        )
+    else:
+        report.info(
+            f"soup.yaml found: {result['soup_path']}",
+            "DOC-001",
+        )
+        if result["unlisted_deps"]:
+            report.error(
+                "Dependencies in pyproject.toml are missing from soup.yaml: "
+                + str(result["unlisted_deps"]),
+                "DOC-001",
+            )
+        else:
+            report.info("All pyproject.toml dependencies are listed in soup.yaml", "DOC-001")
+
+    report.auto_save("soup_inventory_complete", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
