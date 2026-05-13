@@ -1,17 +1,18 @@
 name: Auto-merge
 
-"on":
+on:
   pull_request:
     types: [opened, reopened, synchronize]
     branches:
       - dev
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
   pull-requests: write
   contents: write
+  workflows: write
 
 jobs:
   enable-auto-merge:
