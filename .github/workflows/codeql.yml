@@ -1,6 +1,6 @@
 name: CodeQL
 
-on:
+"on":
   push:
     branches: [main, dev]
   pull_request:
@@ -9,7 +9,7 @@ on:
     - cron: "0 6 * * 1"
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 permissions:
   contents: read

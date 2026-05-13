@@ -12,6 +12,7 @@ env:
 permissions:
   pull-requests: write
   contents: write
+  workflows: write
 
 jobs:
   enable-auto-merge:
