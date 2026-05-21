@@ -29,14 +29,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pip-audit pyyaml
-          pip install "forge-utils @ git+https://github.com/reneeqian/forge.git@v0.1.0"
+          pip install "forge-utils @ git+https://github.com/reneeqian/forge.git@v0.2.0"
           pip install "git+https://github.com/reneeqian/regulatory_tools.git@v1.0.0"
           pip install -e .
 
-      - name: Run pip-audit
-        run: pip-audit
+      - name: "Run pip-audit (policy: fail on fixable CVEs, warn on unfixable)"
+        run: python .github/scripts/pip_audit_policy.py
 
       - name: Generate SBOM
+        continue-on-error: true
         run: pip-audit --format cyclonedx-json --output sbom.json
 
       - name: Upload SBOM artifact
