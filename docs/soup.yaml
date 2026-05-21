@@ -14,7 +14,12 @@ soup:
     purpose: "Visualization for training plots, confusion matrices, and PDF reports"
     license: PSF
 
+  - name: idna
+    version: "3.15"
+    purpose: "Internationalized domain names; pinned >=3.15 to close CVE-2026-45409"
+    license: BSD-3-Clause
+
   - name: forge-utils
-    version: "0.1.0"
+    version: "0.2.0"
     purpose: "Regulatory health grading and traceability infrastructure"
     license: Internal

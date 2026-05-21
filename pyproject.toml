@@ -12,6 +12,7 @@ dependencies = [
     "numpy==2.2.6",
     "torch==2.9.1",
     "matplotlib==3.10.8",
+    "idna>=3.15",
     "forge-utils @ git+https://github.com/reneeqian/forge.git@v0.2.0",
 ]
 
