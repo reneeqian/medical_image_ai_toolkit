@@ -76,60 +76,41 @@ class DummyPartitionStrategy:
 # Dataset Partition Generation
 # =========================================================
 
-@pytest.mark.requirement("DAT-006")
-@pytest.mark.requirement("DAT-007")
-@pytest.mark.requirement("DAT-008")
 @pytest.mark.requirement("SYS-001")
-@pytest.mark.requirement("VER-003")
 def test_dataset_partition_generation(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="SYS-001: MedicalImageDataSource integrates ingestor, partitioning, and slice access")
 
-    report = EvidenceReport(
-        subject="Dataset partition generation"
-    )
-
-    ds = MedicalImageDataSource(
-        dataset_root=tmp_path,
-        ingestor=DummyIngestor()
-    )
-
-    # dataset discovery
+    ds = MedicalImageDataSource(dataset_root=tmp_path, ingestor=DummyIngestor())
     ids = ds.get_patient_ids()
-
-    if len(ids) != 10:
-        report.error("Incorrect patient discovery", "DAT-006")
-
-    # partition
     train, val, test = ds.create_partitions(DummyPartitionStrategy())
-
-    if not ds.has_partitions():
-        report.error("Partitions were not created", "DAT-007")
-
-    # verify no overlap
-    overlap = (
-        set(train) & set(val)
-        or set(train) & set(test)
-        or set(val) & set(test)
-    )
-
-    if overlap:
-        report.error("Dataset partitions overlap", "VER-003")
-
-    # slice validation
     slice_data = ds.load_slice(train[0], 0)
 
-    if slice_data.shape != (10, 10):
-        report.error("Slice loading returned incorrect shape", "DAT-008")
-
-    report.info(f"Dataset discovered {len(ids)} patients (DAT-006); partitions created without overlap (VER-003); slice shape={slice_data.shape} (DAT-008)", "DAT-006")
-    report.info(f"Partitions created — train={len(train)}, val={len(val)}, test={len(test)}", "DAT-007")
-    report.info("Partition overlap check passed — no patients assigned to multiple partitions", "VER-003")
-    report.info(f"Slice load succeeded — shape={slice_data.shape}", "DAT-008")
-    report.info("MedicalImageDataSource integrates ingestor, partitioning, and slice access", "SYS-001")
-    report.auto_save(
-        "DAT006_DAT007_DAT008_dataset_partitioning",
-        evidence_output_dir
+    report.info(
+        f"End-to-end: discovered {len(ids)} patients, partitioned into train={len(train)}/val={len(val)}/test={len(test)}, slice shape={slice_data.shape}",
+        "SYS-001",
     )
+    report.auto_save("SYS001_dataset_partition_generation", evidence_output_dir)
+    assert not report.has_errors, report.summary()
 
+
+@pytest.mark.requirement("VER-003")
+def test_partition_no_overlap(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="VER-003: train/val/test partitions have no patient overlap")
+
+    ds = MedicalImageDataSource(dataset_root=tmp_path, ingestor=DummyIngestor())
+    train, val, test = ds.create_partitions(DummyPartitionStrategy())
+
+    for pair, label in (
+        (set(train) & set(val), "train/val"),
+        (set(train) & set(test), "train/test"),
+        (set(val) & set(test), "val/test"),
+    ):
+        if pair:
+            report.error(f"{label} overlap detected: {pair}", "VER-003")
+        else:
+            report.info(f"No {label} overlap", "VER-003")
+
+    report.auto_save("VER003_partition_no_overlap", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
@@ -138,63 +119,59 @@ def test_dataset_partition_generation(tmp_path, evidence_output_dir):
 # =========================================================
 
 @pytest.mark.requirement("SYS-001")
-@pytest.mark.requirement("DAT-004")
-@pytest.mark.requirement("DAT-007")
-def test_datasource_behaviors(tmp_path, evidence_output_dir):
+def test_datasource_len_and_getitem(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="SYS-001: MedicalImageDataSource supports len() and __getitem__ access")
 
-    report = EvidenceReport(
-        subject="Datasource API behavior"
-    )
-
-    ds = MedicalImageDataSource(
-        dataset_root=tmp_path,
-        ingestor=DummyIngestor()
-    )
-
-    # len
-    if len(ds) != 10:
-        report.error("Incorrect dataset length", "SYS-001")
-
-    # getitem
+    ds = MedicalImageDataSource(dataset_root=tmp_path, ingestor=DummyIngestor())
+    n = len(ds)
     patient = ds[0]
 
+    if n != 10:
+        report.error(f"len(ds)={n}, expected 10", "SYS-001")
     if patient.image_volume.shape != (5, 10, 10):
-        report.error("getitem failed", "SYS-001")
+        report.error(f"ds[0].image_volume.shape={patient.image_volume.shape}, expected (5,10,10)", "SYS-001")
 
-    # partition dataset
+    report.info(f"len(ds)={n}, ds[0].image_volume.shape={patient.image_volume.shape}", "SYS-001")
+    report.auto_save("SYS001_datasource_len_and_getitem", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("DAT-004")
+def test_load_slice_shape_and_bounds(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="DAT-004: load_slice returns correct shape and raises IndexError on out-of-bounds index")
+
+    ds = MedicalImageDataSource(dataset_root=tmp_path, ingestor=DummyIngestor())
     ds.create_partitions(DummyPartitionStrategy())
-
-    if not ds.has_partitions():
-        report.error("Partition flag incorrect", "DAT-007")
-
     train = ds.get_train_ids()
-    val = ds.get_val_ids()
-    test = ds.get_test_ids()
 
-    if len(train) + len(val) + len(test) != 10:
-        report.error("Partition sizes incorrect", "DAT-007")
-
-    # slice load
     s = ds.load_slice(train[0], 1)
-
     if s.shape != (10, 10):
-        report.error("Slice extraction failed", "DAT-004")
+        report.error(f"load_slice shape={s.shape}, expected (10,10)", "DAT-004")
 
-    # slice bounds
     with pytest.raises(IndexError):
         ds.load_slice(train[0], 100)
 
-    # summary (coverage)
-    ds.partition_summary()
+    report.info(f"load_slice(train[0], 1).shape={s.shape}; OOB index raised IndexError", "DAT-004")
+    report.auto_save("DAT004_load_slice_shape_and_bounds", evidence_output_dir)
+    assert not report.has_errors, report.summary()
 
-    report.info(f"MedicalImageDataSource len={len(ds)}, getitem, partition creation, and slice access all correct", "SYS-001")
-    report.info(f"Slice at index 1 shape={s.shape}; out-of-bounds index raised IndexError", "DAT-004")
-    report.info(f"has_partitions()=True after create_partitions(); train={len(train)}, val={len(val)}, test={len(test)}", "DAT-007")
-    report.auto_save(
-        "SYS001_DAT004_DAT007_datasource_behavior",
-        evidence_output_dir
-    )
 
+@pytest.mark.requirement("DAT-007")
+def test_partition_ids_cover_all_patients(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="DAT-007: train+val+test ids together cover all patients exactly once")
+
+    ds = MedicalImageDataSource(dataset_root=tmp_path, ingestor=DummyIngestor())
+    ds.create_partitions(DummyPartitionStrategy())
+    train = ds.get_train_ids()
+    val = ds.get_val_ids()
+    test = ds.get_test_ids()
+    total = len(train) + len(val) + len(test)
+
+    if total != 10:
+        report.error(f"train+val+test total={total}, expected 10", "DAT-007")
+
+    report.info(f"train={len(train)}, val={len(val)}, test={len(test)}, total={total}", "DAT-007")
+    report.auto_save("DAT007_partition_ids_cover_all_patients", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 # =========================================================
@@ -284,14 +261,12 @@ def test_show_slice_basic(tmp_path, evidence_output_dir):
 
 
 @pytest.mark.requirement("DAT-004")
-@pytest.mark.requirement("DAT-010")
-def test_show_slice_with_annotations_and_custom_get_sample(
+def test_show_slice_with_annotations_renders(
     tmp_path,
     evidence_output_dir,
     monkeypatch,
 ):
-
-    report = EvidenceReport(subject="Datasource visualization and custom sample access")
+    report = EvidenceReport(subject="DAT-004: show_slice renders annotated slices without raising")
 
     monkeypatch.setattr(
         "medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource.plt.show",
@@ -302,43 +277,30 @@ def test_show_slice_with_annotations_and_custom_get_sample(
         lambda *args, **kwargs: None,
     )
 
-    sample_ds = MedicalImageDataSource(tmp_path, SampleAwareIngestor())
-    sample = sample_ds.get_sample("P2")
-
-    if sample != ("custom", "P2"):
-        report.error("Datasource did not delegate to ingestor.get_sample", "DAT-010")
-
     annotated_ds = MedicalImageDataSource(tmp_path, AnnotatedDummyIngestor())
-
-    try:
-        annotated_ds.show_slice(
-            "P0",
-            slice_index=2,
-            cols=1,
-            show_annotations=True,
-            show_bboxes=True,
-            block=True,
-        )
-        annotated_ds.show_slice(
-            "P0",
-            slice_range=(1, 3),
-            cols=1,
-            show_annotations=True,
-            show_bboxes=True,
-            block=False,
-        )
-    except Exception as exc:
-        report.error(f"Annotated visualization raised unexpected exception: {exc}", "DAT-004")
+    annotated_ds.show_slice("P0", slice_index=2, cols=1, show_annotations=True, show_bboxes=True, block=True)
+    annotated_ds.show_slice("P0", slice_range=(1, 3), cols=1, show_annotations=True, show_bboxes=True, block=False)
 
     no_annotation_ds = MedicalImageDataSource(tmp_path, DummyIngestor())
     no_annotation_ds.show_slice("P0", annotated_only=True, block=False)
 
-    report.info("get_sample delegated to ingestor.get_sample when defined — custom accessor respected", "DAT-010")
-    report.info("show_slice with annotations and bboxes rendered without error", "DAT-004")
-    report.auto_save(
-        "DAT004_DAT010_datasource_visualization_and_custom_sample",
-        evidence_output_dir,
-    )
+    report.info("show_slice with annotations, bboxes, slice_index, and slice_range all rendered without error", "DAT-004")
+    report.auto_save("DAT004_show_slice_with_annotations_renders", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("DAT-010")
+def test_datasource_get_sample_delegates_to_ingestor(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="DAT-010: datasource.get_sample delegates to ingestor.get_sample when defined")
+
+    sample_ds = MedicalImageDataSource(tmp_path, SampleAwareIngestor())
+    sample = sample_ds.get_sample("P2")
+
+    if sample != ("custom", "P2"):
+        report.error(f"get_sample returned {sample!r}, expected ('custom', 'P2')", "DAT-010")
+
+    report.info(f"get_sample('P2') returned {sample!r} — delegated to ingestor.get_sample", "DAT-010")
+    report.auto_save("DAT010_get_sample_delegates_to_ingestor", evidence_output_dir)
     assert not report.has_errors, report.summary()
     
 @pytest.mark.requirement("DAT-008")
@@ -384,7 +346,7 @@ def test_invalid_patient_id_raises(tmp_path, evidence_output_dir):
     ds = MedicalImageDataSource(tmp_path, DummyIngestor())
     ds.create_partitions(DummyPartitionStrategy())
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         ds.get_patient("INVALID_ID")
 
     report.info("get_patient('INVALID_ID') raised exception — unknown patient IDs are rejected", "DAT-004")

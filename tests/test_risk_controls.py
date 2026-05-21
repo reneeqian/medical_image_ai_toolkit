@@ -100,18 +100,16 @@ def test_nan_loss_halts_training_with_runtime_error(tmp_path, evidence_output_di
         output_dir=tmp_path / "runs",
     )
 
-    raised = False
     try:
         trainer.train()
-    except RuntimeError:
-        raised = True
-
-    if not raised:
-        report.error(
-            "Training with NaN input did not raise RuntimeError", "RSK-001"
-        )
-    else:
-        report.info("RuntimeError raised on NaN loss as expected", "RSK-001")
+        report.error("Training with NaN input did not raise RuntimeError", "RSK-001")
+    except RuntimeError as e:
+        if "NaN" in str(e):
+            report.info(f"RuntimeError raised with expected NaN message: {e!r}", "RSK-001")
+        else:
+            report.error(
+                f"RuntimeError raised but message did not mention NaN: {e!r}", "RSK-001"
+            )
 
     report.auto_save("rsk001_nan_loss_detection", evidence_output_dir)
     assert not report.has_errors, report.summary()
@@ -173,15 +171,18 @@ def test_train_test_partition_no_overlap(tmp_path, evidence_output_dir):
     ds.create_partitions(DeterministicHoldoutSplit(train=0.6, val=0.2))
 
     train_ids = set(ds.train_ids)
+    val_ids = set(ds.val_ids)
     test_ids = set(ds.test_ids)
-    overlap = train_ids & test_ids
 
-    if overlap:
-        report.error(
-            f"Train/test overlap detected: {overlap}", "RSK-003"
-        )
-    else:
-        report.info("No train/test overlap detected", "RSK-003")
+    for pair, label in (
+        (train_ids & test_ids, "train/test"),
+        (val_ids & test_ids, "val/test"),
+        (train_ids & val_ids, "train/val"),
+    ):
+        if pair:
+            report.error(f"{label} overlap detected: {pair}", "RSK-003")
+        else:
+            report.info(f"No {label} overlap detected", "RSK-003")
 
     report.auto_save("rsk003_partition_isolation", evidence_output_dir)
     assert not report.has_errors, report.summary()

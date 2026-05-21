@@ -153,14 +153,8 @@ class TinyConvNet(torch.nn.Module):
 # ---------------------------------------------------------
 
 @pytest.mark.requirement("MOD-003")
-@pytest.mark.requirement("MOD-005")
-@pytest.mark.requirement("DOC-004")
-@pytest.mark.requirement("VER-002")
-def test_training_results_artifact_generation(tmp_path, evidence_output_dir):
-
-    report = EvidenceReport(subject="Training results artifact generation")
-
-    model = torch.nn.Linear(4, 2)
+def test_training_results_object_construction(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="MOD-003: MedicalImageTrainingResults constructs with model, config, datasource, and output_dir")
 
     class DummyConfig:
         epochs = 2
@@ -168,46 +162,92 @@ def test_training_results_artifact_generation(tmp_path, evidence_output_dir):
     class DummyDatasource:
         pass
 
-    results = MedicalImageTrainingResults(
-        model,
-        DummyConfig(),
-        DummyDatasource(),
-        tmp_path
-    )
+    model = torch.nn.Linear(4, 2)
+    results = MedicalImageTrainingResults(model, DummyConfig(), DummyDatasource(), tmp_path)
 
+    if results.model is not model:
+        report.error("results.model is not the model passed at construction", "MOD-003")
+
+    report.info(f"MedicalImageTrainingResults constructed; results.model is the expected model instance", "MOD-003")
+    report.auto_save("MOD003_training_results_object_construction", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("DOC-004")
+def test_training_results_generates_report_file(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="DOC-004: generate_training_report() creates a report file on disk")
+
+    class DummyConfig:
+        epochs = 2
+
+    class DummyDatasource:
+        pass
+
+    results = MedicalImageTrainingResults(torch.nn.Linear(4, 2), DummyConfig(), DummyDatasource(), tmp_path)
     results.metrics = {"loss": 0.1}
     results.history.append({"epoch": 1, "loss": 0.1})
-
     report_path = results.generate_training_report()
 
     if not Path(report_path).exists():
-        report.error("Training report not generated", "DOC-004")
+        report.error(f"Training report not found at {report_path}", "DOC-004")
 
+    report.info(f"generate_training_report() produced file at {report_path}", "DOC-004")
+    report.auto_save("DOC004_training_results_generates_report_file", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("MOD-005")
+def test_training_results_exports_model_file(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="MOD-005: export_model() writes model weights to the specified path")
+
+    class DummyConfig:
+        epochs = 2
+
+    class DummyDatasource:
+        pass
+
+    results = MedicalImageTrainingResults(torch.nn.Linear(4, 2), DummyConfig(), DummyDatasource(), tmp_path)
     model_path = tmp_path / "model.pt"
     results.export_model(model_path)
 
     if not model_path.exists():
-        report.error("Model export failed", "MOD-005")
+        report.error(f"Model file not found at {model_path}", "MOD-005")
 
-    report.info(f"Training report generated at {report_path}", "DOC-004")
-    report.info(f"Model exported to {model_path}", "MOD-005")
-    report.info("MedicalImageTrainingResults generates training report and exports model", "MOD-003")
-    report.info("generate_training_report() and export_model() artifacts created", "VER-002")
-    report.auto_save(
-        "MOD003_MOD005_training_results_artifacts",
-        evidence_output_dir
-    )
+    report.info(f"export_model() wrote model to {model_path}", "MOD-005")
+    report.auto_save("MOD005_training_results_exports_model_file", evidence_output_dir)
+    assert not report.has_errors, report.summary()
 
+
+@pytest.mark.requirement("VER-002")
+def test_training_results_artifact_generation(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="VER-002: generate_training_report() and export_model() both produce artifacts on disk")
+
+    class DummyConfig:
+        epochs = 2
+
+    class DummyDatasource:
+        pass
+
+    results = MedicalImageTrainingResults(torch.nn.Linear(4, 2), DummyConfig(), DummyDatasource(), tmp_path)
+    results.metrics = {"loss": 0.1}
+    results.history.append({"epoch": 1, "loss": 0.1})
+    report_path = results.generate_training_report()
+    model_path = tmp_path / "model.pt"
+    results.export_model(model_path)
+
+    if not Path(report_path).exists():
+        report.error(f"Training report artifact missing at {report_path}", "VER-002")
+    if not model_path.exists():
+        report.error(f"Model artifact missing at {model_path}", "VER-002")
+
+    report.info(f"Both artifacts created: report={report_path}, model={model_path}", "VER-002")
+    report.auto_save("VER002_training_results_artifact_generation", evidence_output_dir)
     assert not report.has_errors, report.summary()
     
 
 @pytest.mark.requirement("MOD-006")
-@pytest.mark.requirement("VER-007")
-def test_inference_determinism(tmp_path, evidence_output_dir):
-
-    report = EvidenceReport(subject="Inference determinism")
-
-    model = torch.nn.Linear(4, 2)
+def test_inference_output_count_matches_input(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="MOD-006: run_inference returns one output per input sample")
 
     class DummyConfig:
         pass
@@ -215,35 +255,41 @@ def test_inference_determinism(tmp_path, evidence_output_dir):
     class DummyDatasource:
         pass
 
-    results = MedicalImageTrainingResults(
-        model,
-        DummyConfig(),
-        DummyDatasource(),
-        tmp_path
-    )
+    model = torch.nn.Linear(4, 2)
+    results = MedicalImageTrainingResults(model, DummyConfig(), DummyDatasource(), tmp_path)
+    data = [[1, 2, 3, 4], [4, 3, 2, 1]]
+    out = results.run_inference(data)
 
-    data = [
-        [1,2,3,4],
-        [4,3,2,1]
-    ]
+    if len(out) != len(data):
+        report.error(f"run_inference returned {len(out)} outputs for {len(data)} inputs", "MOD-006")
 
+    report.info(f"run_inference: {len(data)} inputs → {len(out)} outputs", "MOD-006")
+    report.auto_save("MOD006_inference_output_count_matches_input", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("VER-007")
+def test_inference_determinism(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="VER-007: two run_inference() calls on identical data produce bit-identical outputs")
+
+    class DummyConfig:
+        pass
+
+    class DummyDatasource:
+        pass
+
+    model = torch.nn.Linear(4, 2)
+    results = MedicalImageTrainingResults(model, DummyConfig(), DummyDatasource(), tmp_path)
+    data = [[1, 2, 3, 4], [4, 3, 2, 1]]
     out1 = results.run_inference(data)
     out2 = results.run_inference(data)
 
-    if len(out1) != len(out2):
-        report.error("Inference output length mismatch", "MOD-006")
+    for a, b in zip(out1, out2):
+        if not torch.allclose(a, b):
+            report.error("run_inference produced different outputs on identical input", "VER-007")
 
-    for a,b in zip(out1,out2):
-        if not torch.allclose(a,b):
-            report.error("Inference not deterministic", "VER-007")
-
-    report.info(f"run_inference returned {len(out1)} outputs on two identical calls — lengths match", "MOD-006")
     report.info("Two run_inference() calls on identical data produced bit-identical outputs", "VER-007")
-    report.auto_save(
-        "MOD006_VER007_inference_determinism",
-        evidence_output_dir
-    )
-
+    report.auto_save("VER007_inference_determinism", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
