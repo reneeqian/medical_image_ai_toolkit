@@ -76,56 +76,118 @@ class CountingEvaluator(BaseEvaluator):
     def aggregate(self) -> dict:
         return {"sample_updates": self.count}
 
+    def reset(self) -> None:
+        self.count = 0
+
 
 @pytest.mark.requirement("VER-004")
-@pytest.mark.requirement("VER-005")
-@pytest.mark.requirement("VER-006")
-def test_model_testing_pipeline_generates_metrics_and_report(
+def test_model_testing_pipeline_patient_and_sample_counts(
     tmp_path,
     evidence_output_dir,
 ):
-
-    report = EvidenceReport(subject="Model testing pipeline report generation")
+    report = EvidenceReport(subject="Model testing pipeline — patient and sample counts")
 
     datasource = MedicalImageDataSource(tmp_path, ModelTestingIngestor())
     datasource.create_partitions(DeterministicSplit())
 
-    pipeline = ModelTestingPipeline(
+    results = ModelTestingPipeline(
         datasource=datasource,
         model=IdentityModel(),
         config=TrainingConfig(device="cpu", task=IdentityTask()),
         output_dir=tmp_path / "model_testing_runs",
-    )
-
-    results = pipeline.run()
+    ).run()
 
     if results.metrics.get("num_test_patients") != 1:
-        report.error("Model testing pipeline reported incorrect patient count", "VER-004")
-
+        report.error(
+            f"Expected num_test_patients=1, got {results.metrics.get('num_test_patients')}",
+            "VER-004",
+        )
     if results.metrics.get("num_test_samples") != 2:
-        report.error("Model testing pipeline reported incorrect sample count", "VER-004")
+        report.error(
+            f"Expected num_test_samples=2, got {results.metrics.get('num_test_samples')}",
+            "VER-004",
+        )
+
+    report.info(
+        f"num_test_patients={results.metrics.get('num_test_patients')}, "
+        f"num_test_samples={results.metrics.get('num_test_samples')}",
+        "VER-004",
+    )
+    report.auto_save("VER004_model_testing_patient_and_sample_counts", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("VER-005")
+def test_model_testing_identity_model_produces_perfect_metrics(
+    tmp_path,
+    evidence_output_dir,
+):
+    report = EvidenceReport(subject="Model testing pipeline — identity model yields zero loss and perfect segmentation metrics")
+
+    datasource = MedicalImageDataSource(tmp_path, ModelTestingIngestor())
+    datasource.create_partitions(DeterministicSplit())
+
+    results = ModelTestingPipeline(
+        datasource=datasource,
+        model=IdentityModel(),
+        config=TrainingConfig(device="cpu", task=IdentityTask()),
+        output_dir=tmp_path / "model_testing_runs",
+    ).run()
 
     if results.metrics.get("mean_loss") != 0.0:
-        report.error("Model testing pipeline mean loss should be zero for identity model", "VER-005")
-
+        report.error(
+            f"Expected mean_loss=0.0 for identity model, got {results.metrics.get('mean_loss')}",
+            "VER-005",
+        )
     for key in ("dice", "iou", "precision", "recall", "accuracy"):
         if results.metrics.get(key) != 1.0:
-            report.error(f"Model testing metric {key} was not recorded as expected", "VER-005")
+            report.error(
+                f"Expected {key}=1.0 for identity model, got {results.metrics.get(key)}",
+                "VER-005",
+            )
+
+    report.info(
+        f"Identity model: mean_loss={results.metrics.get('mean_loss')}, "
+        f"dice={results.metrics.get('dice')}, iou={results.metrics.get('iou')}",
+        "VER-005",
+    )
+    report.auto_save("VER005_model_testing_identity_model_metrics", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("VER-006")
+def test_model_testing_pipeline_generates_report_artifact(
+    tmp_path,
+    evidence_output_dir,
+):
+    report = EvidenceReport(subject="Model testing pipeline — report artifact and per-patient results")
+
+    datasource = MedicalImageDataSource(tmp_path, ModelTestingIngestor())
+    datasource.create_partitions(DeterministicSplit())
+
+    results = ModelTestingPipeline(
+        datasource=datasource,
+        model=IdentityModel(),
+        config=TrainingConfig(device="cpu", task=IdentityTask()),
+        output_dir=tmp_path / "model_testing_runs",
+    ).run()
 
     report_path = results.artifacts.get("testing_report")
     if report_path is None or not report_path.exists():
         report.error("Model testing report artifact was not generated", "VER-006")
 
     if len(results.per_patient_results) != 1:
-        report.error("Per-patient model testing output missing", "VER-006")
+        report.error(
+            f"Expected 1 per-patient result, got {len(results.per_patient_results)}",
+            "VER-006",
+        )
 
-    report.info(f"Model testing pipeline: num_test_patients={results.metrics.get('num_test_patients')}, num_test_samples={results.metrics.get('num_test_samples')}", "VER-004")
-    report.info(f"Identity model: mean_loss={results.metrics.get('mean_loss')}, dice={results.metrics.get('dice')}, iou={results.metrics.get('iou')}", "VER-005")
-    report.info(f"Testing report artifact generated; per_patient_results has {len(results.per_patient_results)} entries", "VER-006")
-    report.auto_save(
-        "VER004_VER005_VER006_model_testing_pipeline",
-        evidence_output_dir,
+    report.info(
+        f"Testing report artifact at {report_path}; "
+        f"per_patient_results has {len(results.per_patient_results)} entries",
+        "VER-006",
     )
+    report.auto_save("VER006_model_testing_report_artifact", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 

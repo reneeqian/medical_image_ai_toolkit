@@ -181,71 +181,77 @@ def _create_datasource(tmp_path, nan_patient=False):
 # Tests
 # ---------------------------------------------------------
 
-@pytest.mark.requirement("SYS-002")
-@pytest.mark.requirement("TRN-004")
 @pytest.mark.requirement("SYS-004")
-@pytest.mark.requirement("VER-002")
-def test_training_pipeline_generates_artifacts(
-    tmp_path,
-    evidence_output_dir,
-):
-
-    report = EvidenceReport(
-        subject="Training pipeline artifact generation"
-    )
+def test_trainer_returns_results_object(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="MedicalImageTrainer.train() returns a results object")
 
     ds = _create_datasource(tmp_path)
-
     ds.create_partitions(DeterministicSplit())
+    results = MedicalImageTrainer(
+        ds, TinyConvNet(),
+        TrainingConfig(epochs=1, batch_size=2, device="cpu", task=DummyTask()),
+    ).train()
 
-    model = TinyConvNet()
+    assert results is not None, "Trainer returned None instead of a results object"
+    report.info(f"train() returned {type(results).__name__} instance", "SYS-004")
+    report.auto_save("SYS004_trainer_returns_results_object", evidence_output_dir)
+    assert not report.has_errors, report.summary()
 
-    config = TrainingConfig(
-        epochs=2,
-        batch_size=2,
-        learning_rate=1e-3,
-        device="cpu",
-        task=DummyTask()
-    )
 
-    trainer = MedicalImageTrainer(
-        ds,
-        model,
-        config
-    )
+@pytest.mark.requirement("TRN-004")
+def test_training_creates_artifact_directory(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="Training creates a run artifact directory")
 
-    results = trainer.train()
+    ds = _create_datasource(tmp_path)
+    ds.create_partitions(DeterministicSplit())
+    results = MedicalImageTrainer(
+        ds, TinyConvNet(),
+        TrainingConfig(epochs=1, batch_size=2, device="cpu", task=DummyTask()),
+    ).train()
 
-    if results is None:
-        report.error(
-            "Trainer returned no results object",
-            "SYS-004"
-        )
+    assert results.run_dir.exists(), f"Artifact directory not created: {results.run_dir}"
+    report.info(f"Artifact directory created at {results.run_dir}", "TRN-004")
+    report.auto_save("TRN004_training_creates_artifact_directory", evidence_output_dir)
+    assert not report.has_errors, report.summary()
 
-    artifact_dir = results.run_dir
 
-    if not Path(artifact_dir).exists():
-        report.error(
-            "Artifact directory not created",
-            "TRN-004"
-        )
+@pytest.mark.requirement("VER-002")
+def test_training_writes_metrics_json(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="Training writes metrics.json to the run artifact directory")
 
-    metrics_file = Path(artifact_dir) / "metrics.json"
+    ds = _create_datasource(tmp_path)
+    ds.create_partitions(DeterministicSplit())
+    results = MedicalImageTrainer(
+        ds, TinyConvNet(),
+        TrainingConfig(epochs=1, batch_size=2, device="cpu", task=DummyTask()),
+    ).train()
 
-    if not metrics_file.exists():
-        report.error(
-            "Metrics file missing",
-            "VER-002"
-        )
-
-    report.info("Training returned a results object (SYS-002, SYS-004)", "SYS-002")
-    report.info(f"Artifact directory created at {artifact_dir}", "TRN-004")
+    metrics_file = results.run_dir / "metrics.json"
+    assert metrics_file.exists(), f"metrics.json not written to {results.run_dir}"
     report.info(f"metrics.json written at {metrics_file}", "VER-002")
-    report.auto_save(
-        "SYS002_TRN004_training_pipeline_generates_artifacts",
-        evidence_output_dir
-    )
+    report.auto_save("VER002_training_writes_metrics_json", evidence_output_dir)
+    assert not report.has_errors, report.summary()
 
+
+@pytest.mark.requirement("SYS-002")
+def test_training_pipeline_integration(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="Training pipeline produces results with metrics and history")
+
+    ds = _create_datasource(tmp_path)
+    ds.create_partitions(DeterministicSplit())
+    results = MedicalImageTrainer(
+        ds, TinyConvNet(),
+        TrainingConfig(epochs=2, batch_size=2, learning_rate=1e-3, device="cpu", task=DummyTask()),
+    ).train()
+
+    assert results.metrics, "Training results have no metrics"
+    assert results.history, "Training results have no history"
+    report.info(
+        f"Training pipeline complete: epochs_trained={results.metrics.get('epochs_trained')}, "
+        f"history_entries={len(results.history)}",
+        "SYS-002",
+    )
+    report.auto_save("SYS002_training_pipeline_integration", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
@@ -317,57 +323,62 @@ def test_training_detects_nan_loss(
 
 
 @pytest.mark.requirement("VER-001")
-@pytest.mark.requirement("TRN-006")
-def test_training_is_deterministic(
-    tmp_path,
-    evidence_output_dir,
-):
-
-    report = EvidenceReport(
-        subject="Deterministic training verification"
-    )
+def test_training_metrics_are_deterministic(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="Two training runs with identical seed produce identical metrics")
 
     ds1 = _create_datasource(tmp_path)
     ds1.create_partitions(DeterministicSplit())
-
     ds2 = _create_datasource(tmp_path)
     ds2.create_partitions(DeterministicSplit())
 
-    config = TrainingConfig(
-        epochs=2,
-        batch_size=2,
-        task=DummyTask(),
-    )
+    config = TrainingConfig(epochs=2, batch_size=2, task=DummyTask())
 
-    # Reset seed before each model creation so both start from identical weights
     torch.manual_seed(42)
     model1 = TinyConvNet()
     torch.manual_seed(42)
     model2 = TinyConvNet()
 
-    trainer1 = MedicalImageTrainer(ds1, model1, config)
-    trainer2 = MedicalImageTrainer(ds2, model2, config)
-
-    results1 = trainer1.train()
-    results2 = trainer2.train()
+    results1 = MedicalImageTrainer(ds1, model1, config).train()
+    results2 = MedicalImageTrainer(ds2, model2, config).train()
 
     hash1 = _hash_metrics_file(Path(results1.run_dir) / "metrics.json")
     hash2 = _hash_metrics_file(Path(results2.run_dir) / "metrics.json")
 
     if hash1 != hash2:
+        report.error("Training metrics differ across runs with identical seed and data", "VER-001")
 
-        report.error(
-            "Training metrics differ across deterministic runs",
-            "VER-001"
-        )
+    report.info("Two runs with identical data and seed produced hash-identical metrics.json", "VER-001")
+    report.auto_save("VER001_training_metrics_are_deterministic", evidence_output_dir)
+    assert not report.has_errors, report.summary()
 
-    report.info("Two training runs with identical data and seeds produced hash-identical metrics.json files", "VER-001")
-    report.info("Training is deterministic given same seed and data order", "TRN-006")
-    report.auto_save(
-        "VER001_training_is_deterministic",
-        evidence_output_dir
-    )
 
+@pytest.mark.requirement("TRN-006")
+def test_training_order_is_deterministic(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="Training epoch history is deterministic given same seed and data order")
+
+    ds1 = _create_datasource(tmp_path)
+    ds1.create_partitions(DeterministicSplit())
+    ds2 = _create_datasource(tmp_path)
+    ds2.create_partitions(DeterministicSplit())
+
+    config = TrainingConfig(epochs=2, batch_size=2, task=DummyTask())
+
+    torch.manual_seed(42)
+    model1 = TinyConvNet()
+    torch.manual_seed(42)
+    model2 = TinyConvNet()
+
+    results1 = MedicalImageTrainer(ds1, model1, config).train()
+    results2 = MedicalImageTrainer(ds2, model2, config).train()
+
+    losses1 = [e["loss"] for e in results1.history]
+    losses2 = [e["loss"] for e in results2.history]
+
+    if losses1 != losses2:
+        report.error(f"Epoch losses differ: {losses1} vs {losses2}", "TRN-006")
+
+    report.info(f"Epoch losses match across two deterministic runs: {losses1}", "TRN-006")
+    report.auto_save("TRN006_training_order_is_deterministic", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
@@ -405,36 +416,38 @@ def test_dataset_partitions_do_not_overlap(
     assert not report.has_errors, report.summary()
     
 @pytest.mark.requirement("SYS-002")
-@pytest.mark.requirement("SYS-003")
-def test_trainer_sanity_check(tmp_path, evidence_output_dir):
-
-    report = EvidenceReport(subject="Trainer sanity check")
+def test_trainer_sanity_check_runs_without_error(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="MedicalImageTrainer.sanity_check() runs without error")
 
     class DummyDatasource:
-
         def has_partitions(self): return False
-
         def get_num_patients(self): return 0
 
-    model = torch.nn.Linear(4,2)
-
-    config = TrainingConfig()
-
-    trainer = MedicalImageTrainer(
-        DummyDatasource(),
-        model,
-        config
-    )
-
+    trainer = MedicalImageTrainer(DummyDatasource(), torch.nn.Linear(4, 2), TrainingConfig())
     trainer.sanity_check()
 
-    report.info("MedicalImageTrainer.sanity_check() executed without error on a minimal DummyDatasource", "SYS-002")
-    report.info("TrainingConfig is accessible to sanity check without configuration errors", "SYS-003")
-    report.auto_save(
-        "SYS002_SYS003_trainer_sanity_check",
-        evidence_output_dir
-    )
+    report.info("sanity_check() completed without error on a minimal DummyDatasource", "SYS-002")
+    report.auto_save("SYS002_trainer_sanity_check_runs", evidence_output_dir)
+    assert not report.has_errors, report.summary()
 
+
+@pytest.mark.requirement("SYS-003")
+def test_trainer_sanity_check_accepts_training_config(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="TrainingConfig is accessible to sanity_check without errors")
+
+    class DummyDatasource:
+        def has_partitions(self): return False
+        def get_num_patients(self): return 0
+
+    config = TrainingConfig(epochs=5, learning_rate=1e-4, device="cpu")
+    trainer = MedicalImageTrainer(DummyDatasource(), torch.nn.Linear(4, 2), config)
+    trainer.sanity_check()
+
+    report.info(
+        f"sanity_check() printed config (epochs={config.epochs}, lr={config.learning_rate}) without error",
+        "SYS-003",
+    )
+    report.auto_save("SYS003_trainer_sanity_check_config", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 @pytest.mark.requirement("SYS-002")
@@ -584,10 +597,12 @@ def test_early_stop_loss_threshold_halts_training(tmp_path, evidence_output_dir)
             f"Expected 1 epoch before threshold stop, got {results.metrics.get('epochs_trained')}",
             "TRN-005",
         )
-    if "loss_threshold" not in (results.metrics.get("early_stop_reason") or ""):
-        report.error("early_stop_reason does not name loss_threshold", "TRN-005")
 
-    report.info(f"Loss threshold early stop: epochs_trained={results.metrics.get('epochs_trained')}, reason={results.metrics.get('early_stop_reason')!r}", "TRN-005")
+    report.info(
+        f"Loss threshold early stop: epochs_trained={results.metrics.get('epochs_trained')}, "
+        f"reason={results.metrics.get('early_stop_reason')!r}",
+        "TRN-005",
+    )
     report.auto_save("TRN005_early_stop_loss_threshold", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -661,12 +676,10 @@ def test_early_stop_disabled_runs_all_epochs(tmp_path, evidence_output_dir):
 
 
 @pytest.mark.requirement("TRN-006")
-@pytest.mark.requirement("TRN-008")
-def test_val_evaluator_metrics_appear_in_history(tmp_path, evidence_output_dir):
+def test_val_loss_appears_in_epoch_history(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="val_loss appears in every epoch history entry when a val partition exists")
 
-    report = EvidenceReport(subject="val_evaluator aggregate metrics appear in epoch history")
-
-    class DummyEvaluator(BaseEvaluator):
+    class _DummyEvaluator(BaseEvaluator):
         def update(self, pred, target) -> None:
             pass
         def aggregate(self) -> dict:
@@ -674,28 +687,46 @@ def test_val_evaluator_metrics_appear_in_history(tmp_path, evidence_output_dir):
 
     ds = _create_datasource(tmp_path)
     ds.create_partitions(DeterministicSplit())
-
-    config = TrainingConfig(
-        epochs=2,
-        task=DummyTask(),
-        early_stop=False,
-        val_evaluator=DummyEvaluator(),
-    )
-
-    results = MedicalImageTrainer(ds, TinyConvNet(), config).train()
+    results = MedicalImageTrainer(
+        ds, TinyConvNet(),
+        TrainingConfig(epochs=2, task=DummyTask(), early_stop=False, val_evaluator=_DummyEvaluator()),
+    ).train()
 
     for entry in results.history:
         if "val_loss" not in entry:
             report.error(f"val_loss missing from history entry: {entry}", "TRN-006")
-        if "custom_metric" not in entry:
-            report.error(
-                f"custom_metric from val_evaluator missing in history entry: {entry}",
-                "TRN-008",
-            )
 
-    report.info(f"val_loss and custom_metric appear in all {len(results.history)} history entries", "TRN-006")
-    report.info("val_evaluator aggregate() keys merged into per-epoch history entries", "TRN-008")
-    report.auto_save("TRN006_TRN008_val_evaluator_metrics_in_history", evidence_output_dir)
+    report.info(f"val_loss present in all {len(results.history)} history entries", "TRN-006")
+    report.auto_save("TRN006_val_loss_in_history", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("TRN-008")
+def test_val_evaluator_custom_metrics_appear_in_history(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="val_evaluator aggregate() keys are merged into per-epoch history entries")
+
+    class _DummyEvaluator(BaseEvaluator):
+        def update(self, pred, target) -> None:
+            pass
+        def aggregate(self) -> dict:
+            return {"custom_metric": 1.0}
+
+    ds = _create_datasource(tmp_path)
+    ds.create_partitions(DeterministicSplit())
+    results = MedicalImageTrainer(
+        ds, TinyConvNet(),
+        TrainingConfig(epochs=2, task=DummyTask(), early_stop=False, val_evaluator=_DummyEvaluator()),
+    ).train()
+
+    for entry in results.history:
+        if "custom_metric" not in entry:
+            report.error(f"custom_metric from val_evaluator missing in history entry: {entry}", "TRN-008")
+
+    report.info(
+        f"val_evaluator aggregate() keys present in all {len(results.history)} history entries",
+        "TRN-008",
+    )
+    report.auto_save("TRN008_val_evaluator_custom_metrics_in_history", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
@@ -743,40 +774,45 @@ def test_training_pipeline_stops_on_dataset_validation_errors(tmp_path, evidence
 
 
 @pytest.mark.requirement("TRN-004")
-@pytest.mark.requirement("SYS-002")
-def test_training_pipeline_full_run(tmp_path, evidence_output_dir):
-    report = EvidenceReport(subject="TrainingPipeline full run produces model and partition artifacts")
+def test_training_pipeline_writes_model_and_partition_artifacts(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="TrainingPipeline writes model.pt and partitions.json artifacts")
 
     ds = _create_datasource(tmp_path)
-
-    config = TrainingConfig(
-        epochs=1,
-        task=DummyTask(),
-        split_strategy=DeterministicSplit(),
-        early_stop=False,
-    )
-
-    pipeline = TrainingPipeline(
-        datasource=ds,
-        model=TinyConvNet(),
-        config=config,
-        output_dir=tmp_path / "pipeline_output",
-    )
-
-    outputs = pipeline.run()
+    config = TrainingConfig(epochs=1, task=DummyTask(), split_strategy=DeterministicSplit(), early_stop=False)
+    outputs = TrainingPipeline(
+        datasource=ds, model=TinyConvNet(), config=config, output_dir=tmp_path / "pipeline_output"
+    ).run()
     results = outputs["results"]
 
     model_path = results.artifacts.get("model")
     partitions_path = results.artifacts.get("partitions")
 
     if not model_path or not Path(model_path).exists():
-        report.error("model artifact not written", "TRN-004")
+        report.error("model.pt artifact not written", "TRN-004")
     if not partitions_path or not Path(partitions_path).exists():
-        report.error("partitions artifact not written", "TRN-004")
+        report.error("partitions.json artifact not written", "TRN-004")
 
-    report.info("TrainingPipeline full run wrote model.pt and partitions.json artifacts", "TRN-004")
-    report.info("TrainingPipeline returned results object with artifact paths", "SYS-002")
-    report.auto_save("TRN004_SYS002_training_pipeline_full_run", evidence_output_dir)
+    report.info("TrainingPipeline wrote model.pt and partitions.json", "TRN-004")
+    report.auto_save("TRN004_pipeline_model_and_partition_artifacts", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("SYS-002")
+def test_training_pipeline_returns_results_with_artifacts(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="TrainingPipeline returns results dict with artifact path keys")
+
+    ds = _create_datasource(tmp_path)
+    config = TrainingConfig(epochs=1, task=DummyTask(), split_strategy=DeterministicSplit(), early_stop=False)
+    outputs = TrainingPipeline(
+        datasource=ds, model=TinyConvNet(), config=config, output_dir=tmp_path / "pipeline_output"
+    ).run()
+
+    assert "results" in outputs, "TrainingPipeline output missing 'results' key"
+    results = outputs["results"]
+    assert results.artifacts, "results.artifacts is empty"
+
+    report.info(f"TrainingPipeline returned results with artifact keys: {list(results.artifacts)}", "SYS-002")
+    report.auto_save("SYS002_training_pipeline_returns_results", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 

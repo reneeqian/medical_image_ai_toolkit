@@ -156,47 +156,69 @@ def test_hyperparameter_space_random_sample(evidence_output_dir):
 
 
 @pytest.mark.requirement("TRN-002")
-@pytest.mark.requirement("TRN-010")
 def test_tuning_pipeline_runs_all_grid_trials(tmp_path, evidence_output_dir):
-    report = EvidenceReport(subject="Tuning pipeline runs all grid trials")
+    report = EvidenceReport(subject="TRN-002: tuning pipeline runs one trial per grid combination and creates run directories")
 
     ds = _create_datasource(tmp_path)
     space = HyperparameterSpace(learning_rate=[1e-3, 1e-4])  # 2 trials
 
     def trial_factory(params):
-        model = TinyConvNet()
-        config = TrainingConfig(
+        return TinyConvNet(), TrainingConfig(
             epochs=1,
             learning_rate=params["learning_rate"],
             task=DummyTask(),
             early_stop=False,
         )
-        return model, config
 
-    pipeline = HyperparameterTuningPipeline(
+    results = HyperparameterTuningPipeline(
         datasource=ds,
         trial_factory=trial_factory,
         space=space,
         split_strategy=DeterministicSplit(),
         output_dir=tmp_path / "tuning",
         search_strategy="grid",
-    )
-    results = pipeline.run()
+    ).run()
 
     if len(results.trial_results) != 2:
         report.error(f"Expected 2 trial results, got {len(results.trial_results)}", "TRN-002")
-
-    # TRN-010: shared partitions were created and persist
-    if not ds.has_partitions():
-        report.error("Datasource has no partitions after tuning run", "TRN-010")
-
     for tr in results.trial_results:
         if not tr.run_dir.exists():
             report.error(f"Trial {tr.trial_id} run_dir does not exist: {tr.run_dir}", "TRN-002")
 
-    report.info(f"Tuning pipeline ran all {len(results.trial_results)} grid trials and created run directories", "TRN-002")
-    report.info("Datasource has partitions after tuning pipeline run — shared across trials", "TRN-010")
-    report.auto_save("TRN002_TRN010_tuning_pipeline_runs_all_grid_trials", evidence_output_dir)
+    report.info(f"Tuning pipeline ran {len(results.trial_results)} grid trials; all run_dirs exist", "TRN-002")
+    report.auto_save("TRN002_tuning_pipeline_runs_all_grid_trials", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("TRN-010")
+def test_tuning_pipeline_creates_shared_partitions(tmp_path, evidence_output_dir):
+    report = EvidenceReport(subject="TRN-010: tuning pipeline creates shared partitions that persist across all trials")
+
+    ds = _create_datasource(tmp_path)
+    space = HyperparameterSpace(learning_rate=[1e-3, 1e-4])
+
+    def trial_factory(params):
+        return TinyConvNet(), TrainingConfig(
+            epochs=1,
+            learning_rate=params["learning_rate"],
+            task=DummyTask(),
+            early_stop=False,
+        )
+
+    HyperparameterTuningPipeline(
+        datasource=ds,
+        trial_factory=trial_factory,
+        space=space,
+        split_strategy=DeterministicSplit(),
+        output_dir=tmp_path / "tuning",
+        search_strategy="grid",
+    ).run()
+
+    if not ds.has_partitions():
+        report.error("Datasource has no partitions after tuning run — shared partitions not created", "TRN-010")
+
+    report.info("Datasource has partitions after tuning pipeline run — shared across all trials", "TRN-010")
+    report.auto_save("TRN010_tuning_pipeline_shared_partitions", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
