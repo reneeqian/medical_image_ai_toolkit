@@ -43,6 +43,8 @@ def test_training_config_initialization(evidence_output_dir):
     if config.task is not task:
         report.error("task not stored correctly", "TRN-001")
 
+    report.info(f"TrainingConfig fields: epochs={config.epochs}, batch_size={config.batch_size}, lr={config.learning_rate}, device={config.device}", "SYS-003")
+    report.info("task stored and retrieved correctly from TrainingConfig", "TRN-001")
     report.auto_save("SYS003_TRN001_training_config_init", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -60,6 +62,7 @@ def test_training_config_uses_task_loss_interface(evidence_output_dir):
     if not torch.isfinite(loss):
         report.error("Task compute_loss returned non-finite value", "TRN-007")
 
+    report.info(f"config.task.compute_loss() returned finite value={loss.item():.4f}", "TRN-007")
     report.auto_save("TRN007_task_loss_interface", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -72,6 +75,7 @@ def test_training_config_optimizer_class(evidence_output_dir):
     if config.optimizer is not torch.optim.Adam:
         report.error("Optimizer class not stored correctly", "MOD-001")
 
+    report.info("TrainingConfig stores optimizer class reference (torch.optim.Adam) without instantiating it", "MOD-001")
     report.auto_save("MOD001_training_config_optimizer", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -91,6 +95,7 @@ def test_training_config_early_stop_defaults(evidence_output_dir):
     if config.plateau_min_delta != 1e-4:
         report.error(f"plateau_min_delta default wrong: {config.plateau_min_delta}", "TRN-005")
 
+    report.info("TrainingConfig early_stop defaults: early_stop=True, loss_threshold=0.01, plateau_patience=5, plateau_min_delta=1e-4", "TRN-005")
     report.auto_save("TRN005_early_stop_defaults", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -104,6 +109,7 @@ def test_training_config_early_stop_can_be_disabled(evidence_output_dir):
     if config.early_stop is not False:
         report.error("early_stop should be False when set explicitly", "TRN-005")
 
+    report.info("TrainingConfig early_stop=False stored correctly", "TRN-005")
     report.auto_save("TRN005_early_stop_disabled_config", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -125,5 +131,6 @@ def test_training_config_early_stop_custom_values(evidence_output_dir):
     if config.plateau_min_delta != 1e-3:
         report.error(f"plateau_min_delta not stored correctly: {config.plateau_min_delta}", "TRN-005")
 
+    report.info("Custom early stop values loss_threshold=0.05, plateau_patience=10, plateau_min_delta=1e-3 stored correctly", "TRN-005")
     report.auto_save("TRN005_early_stop_custom_values", evidence_output_dir)
     assert not report.has_errors, report.summary()

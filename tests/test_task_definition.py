@@ -45,7 +45,9 @@ def test_task_generates_aligned_samples(evidence_output_dir):
     assert isinstance(x, torch.Tensor)
     assert isinstance(y, torch.Tensor)
     assert x.shape == y.shape
-    
+
+    report.info(f"generate_training_samples yielded item with input shape={x.shape} and target shape={y.shape} — shapes match", "DAT-009")
+    report.info("Task generates aligned input-target tensor pairs for training", "TRN-008")
     report.auto_save(
         "TRN008_task_sample_alignment",
         evidence_output_dir
@@ -67,7 +69,8 @@ def test_task_compute_loss(evidence_output_dir):
 
     assert isinstance(loss, torch.Tensor)
     assert loss.item() > 0
-    
+
+    report.info(f"compute_loss returned Tensor with value={loss.item():.4f} > 0 for mismatched pred/target", "TRN-007")
     report.auto_save(
         "TRN007_task_compute_loss",
         evidence_output_dir
@@ -86,8 +89,9 @@ def test_task_slice_level_iteration(evidence_output_dir):
     outputs = list(task.generate_training_samples(sample))
 
     assert len(outputs) == 3
-    
-    report.auto_save(   
+
+    report.info(f"generate_training_samples yielded {len(outputs)} samples for a 3-slice volume — one sample per slice", "DAT-010")
+    report.auto_save(
         "DAT010_task_slice_iteration",
         evidence_output_dir
     )
@@ -105,7 +109,8 @@ def test_postprocess_prediction_identity(evidence_output_dir):
     out = task.postprocess_prediction(x)
 
     assert torch.equal(x, out)
-    
+
+    report.info("postprocess_prediction returns input tensor unchanged — default is identity transformation", "TRN-008")
     report.auto_save(
         "TRN008_task_postprocess_prediction_identity",
         evidence_output_dir

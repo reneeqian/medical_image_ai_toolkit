@@ -120,6 +120,11 @@ def test_dataset_partition_generation(tmp_path, evidence_output_dir):
     if slice_data.shape != (10, 10):
         report.error("Slice loading returned incorrect shape", "DAT-008")
 
+    report.info(f"Dataset discovered {len(ids)} patients (DAT-006); partitions created without overlap (VER-003); slice shape={slice_data.shape} (DAT-008)", "DAT-006")
+    report.info(f"Partitions created — train={len(train)}, val={len(val)}, test={len(test)}", "DAT-007")
+    report.info("Partition overlap check passed — no patients assigned to multiple partitions", "VER-003")
+    report.info(f"Slice load succeeded — shape={slice_data.shape}", "DAT-008")
+    report.info("MedicalImageDataSource integrates ingestor, partitioning, and slice access", "SYS-001")
     report.auto_save(
         "DAT006_DAT007_DAT008_dataset_partitioning",
         evidence_output_dir
@@ -182,6 +187,9 @@ def test_datasource_behaviors(tmp_path, evidence_output_dir):
     # summary (coverage)
     ds.partition_summary()
 
+    report.info(f"MedicalImageDataSource len={len(ds)}, getitem, partition creation, and slice access all correct", "SYS-001")
+    report.info(f"Slice at index 1 shape={s.shape}; out-of-bounds index raised IndexError", "DAT-004")
+    report.info(f"has_partitions()=True after create_partitions(); train={len(train)}, val={len(val)}, test={len(test)}", "DAT-007")
     report.auto_save(
         "SYS001_DAT004_DAT007_datasource_behavior",
         evidence_output_dir
@@ -215,6 +223,7 @@ def test_get_num_patients_and_get_patient(tmp_path, evidence_output_dir):
     if sample.image_volume.shape != (5, 10, 10):
         report.error("get_sample returned incorrect object", "DAT-006")
 
+    report.info(f"get_num_patients={num}, get_patient shape={patient.image_volume.shape}, get_sample shape={sample.image_volume.shape}", "DAT-006")
     report.auto_save("DAT006_get_patient_get_sample", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -239,6 +248,7 @@ def test_has_partitions_flag(tmp_path, evidence_output_dir):
     if not ds.has_partitions():
         report.error("has_partitions False after create_partitions", "DAT-007")
 
+    report.info("has_partitions()=False before partitioning; True after create_partitions()", "DAT-007")
     report.auto_save("DAT007_has_partitions_flag", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -268,6 +278,7 @@ def test_show_slice_basic(tmp_path, evidence_output_dir):
     with pytest.raises(ValueError):
         ds.show_slice("P0", block = False)
 
+    report.info("show_slice valid index succeeded; out-of-bounds raised IndexError; no-selector raised ValueError", "DAT-004")
     report.auto_save("DAT004_show_slice_basic", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -322,6 +333,8 @@ def test_show_slice_with_annotations_and_custom_get_sample(
     no_annotation_ds = MedicalImageDataSource(tmp_path, DummyIngestor())
     no_annotation_ds.show_slice("P0", annotated_only=True, block=False)
 
+    report.info("get_sample delegated to ingestor.get_sample when defined — custom accessor respected", "DAT-010")
+    report.info("show_slice with annotations and bboxes rendered without error", "DAT-004")
     report.auto_save(
         "DAT004_DAT010_datasource_visualization_and_custom_sample",
         evidence_output_dir,
@@ -344,7 +357,8 @@ def test_partitions_are_deterministic(tmp_path, evidence_output_dir):
     assert t1 == t2
     assert v1 == v2
     assert te1 == te2
-    
+
+    report.info("Two MedicalImageDataSource instances with the same split strategy produced identical partitions", "DAT-008")
     report.auto_save("DAT008_partitions_are_deterministic", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -357,7 +371,8 @@ def test_access_before_partition_raises(tmp_path, evidence_output_dir):
 
     with pytest.raises(RuntimeError):
         ds.get_train_ids()
-        
+
+    report.info("get_train_ids() before create_partitions() raised RuntimeError as expected", "DAT-007")
     report.auto_save("DAT007_access_before_partition_raises", evidence_output_dir)
     assert not report.has_errors, report.summary()
     
@@ -371,6 +386,7 @@ def test_invalid_patient_id_raises(tmp_path, evidence_output_dir):
 
     with pytest.raises(Exception):
         ds.get_patient("INVALID_ID")
-        
+
+    report.info("get_patient('INVALID_ID') raised exception — unknown patient IDs are rejected", "DAT-004")
     report.auto_save("DAT004_invalid_patient_id_raises", evidence_output_dir)
     assert not report.has_errors, report.summary()
