@@ -159,6 +159,7 @@ def test_find_run_dir_returns_most_recent(tmp_path, evidence_output_dir):
             f"Expected most recent run {newest.name}, got {result.name}", "REP-002"
         )
 
+    report.info(f"find_run_dir() returned most recent run: {result.name}", "REP-002")
     report.auto_save("REP002_find_run_dir_most_recent", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -178,6 +179,7 @@ def test_find_run_dir_returns_by_exact_id(tmp_path, evidence_output_dir):
             f"Expected {target.name}, got {result.name}", "REP-002"
         )
 
+    report.info(f"find_run_dir(run_id='20260102_100000_000000') returned exact match: {result.name}", "REP-002")
     report.auto_save("REP002_find_run_dir_exact_id", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -198,6 +200,7 @@ def test_find_run_dir_partial_prefix_match(tmp_path, evidence_output_dir):
             "REP-002",
         )
 
+    report.info(f"find_run_dir(run_id='20260427') prefix match returned latest run on that date: {result.name}", "REP-002")
     report.auto_save("REP002_find_run_dir_prefix_match", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -240,6 +243,8 @@ def test_generate_training_pdf_creates_file(tmp_path, evidence_output_dir):
             report.error("PDF file exists but is empty", "REP-001")
         elif not pdf_path.name.endswith(".pdf"):
             report.error(f"Output file has wrong extension: {pdf_path.name}", "REP-001")
+        else:
+            report.info(f"generate_training_pdf() created {pdf_path.name} ({pdf_path.stat().st_size} bytes)", "REP-001")
     except Exception as e:
         report.error(f"generate_training_pdf raised {type(e).__name__}: {e}", "REP-001")
 
@@ -262,6 +267,8 @@ def test_generate_training_pdf_with_val_loss_in_history(tmp_path, evidence_outpu
             report.error("PDF not written", "REP-001")
         elif pdf_path.stat().st_size == 0:
             report.error("PDF is empty", "REP-001")
+        else:
+            report.info(f"generate_training_pdf() handled val_loss + metric fields; created {pdf_path.name}", "REP-001")
     except Exception as e:
         report.error(
             f"generate_training_pdf raised {type(e).__name__} with val_loss history: {e}",
@@ -285,6 +292,8 @@ def test_generate_tuning_pdf_creates_file(tmp_path, evidence_output_dir):
             report.error(f"PDF not found at: {pdf_path}", "REP-001")
         elif pdf_path.stat().st_size == 0:
             report.error("PDF file is empty", "REP-001")
+        else:
+            report.info(f"generate_tuning_pdf() created {pdf_path.name} ({pdf_path.stat().st_size} bytes)", "REP-001")
     except Exception as e:
         report.error(f"generate_tuning_pdf raised {type(e).__name__}: {e}", "REP-001")
 
@@ -305,6 +314,8 @@ def test_generate_model_testing_pdf_creates_file(tmp_path, evidence_output_dir):
             report.error(f"PDF not found at: {pdf_path}", "REP-001")
         elif pdf_path.stat().st_size == 0:
             report.error("PDF file is empty", "REP-001")
+        else:
+            report.info(f"generate_model_testing_pdf() created {pdf_path.name} ({pdf_path.stat().st_size} bytes)", "REP-001")
     except Exception as e:
         report.error(f"generate_model_testing_pdf raised {type(e).__name__}: {e}", "REP-001")
 

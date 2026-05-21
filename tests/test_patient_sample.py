@@ -36,6 +36,7 @@ def test_patient_sample_basic(evidence_output_dir):
     if "vector_rois: none" not in text:
         report.error("repr annotation summary incorrect","DAT-005")
 
+    report.info(f"PatientSample shape={sample.image_volume.shape}, repr includes class name and annotation summary", "DAT-005")
     report.auto_save(
         "DAT005_patient_sample_basic",
         evidence_output_dir
@@ -79,6 +80,7 @@ def test_patient_sample_repr_with_annotations(evidence_output_dir):
     if "metadata keys" not in text:
         report.error("repr missing metadata summary","DAT-005")
 
+    report.info("PatientSample repr includes ROI summary and metadata keys when annotations and metadata are present", "DAT-005")
     report.auto_save(
         "DAT005_patient_sample_repr_annotations",
         evidence_output_dir

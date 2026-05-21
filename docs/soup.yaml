@@ -15,6 +15,6 @@ soup:
     license: PSF
 
   - name: forge-utils
-    version: "main"
+    version: "0.2.0"
     purpose: "Regulatory health grading and traceability infrastructure"
     license: Internal
