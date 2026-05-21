@@ -71,6 +71,7 @@ def test_datasource_edge_cases(tmp_path, evidence_output_dir):
     with pytest.raises(IndexError):
         ds.show_slice("A", slice_index=100)
 
+    report.info("get_sample fallback, pre-partition RuntimeError, empty-selector ValueError, and out-of-bounds IndexError all behaved correctly", "DAT-010")
     report.auto_save(
         "DAT010_datasource_edge_cases",
         evidence_output_dir

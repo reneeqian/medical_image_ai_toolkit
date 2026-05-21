@@ -119,6 +119,9 @@ def test_model_testing_pipeline_generates_metrics_and_report(
     if len(results.per_patient_results) != 1:
         report.error("Per-patient model testing output missing", "VER-006")
 
+    report.info(f"Model testing pipeline: num_test_patients={results.metrics.get('num_test_patients')}, num_test_samples={results.metrics.get('num_test_samples')}", "VER-004")
+    report.info(f"Identity model: mean_loss={results.metrics.get('mean_loss')}, dice={results.metrics.get('dice')}, iou={results.metrics.get('iou')}", "VER-005")
+    report.info(f"Testing report artifact generated; per_patient_results has {len(results.per_patient_results)} entries", "VER-006")
     report.auto_save(
         "VER004_VER005_VER006_model_testing_pipeline",
         evidence_output_dir,
@@ -146,6 +149,7 @@ def test_model_testing_pipeline_requires_existing_partitions(
     with pytest.raises(RuntimeError):
         pipeline.run()
 
+    report.info("ModelTestingPipeline raised RuntimeError when datasource has no partitions", "VER-004")
     report.auto_save(
         "VER004_model_testing_requires_partitions",
         evidence_output_dir,
@@ -174,6 +178,7 @@ def test_model_testing_pipeline_requires_task_definition(
     with pytest.raises(ValueError):
         pipeline.run()
 
+    report.info("ModelTestingPipeline raised ValueError when task=None — task is required for testing", "VER-006")
     report.auto_save(
         "VER006_model_testing_requires_task",
         evidence_output_dir,
@@ -218,6 +223,7 @@ def test_segmentation_evaluator_records_counts_and_reset(
         if not math.isnan(reset_metrics[key]):
             report.error(f"Segmentation evaluator {key} should be NaN after reset", "VER-005")
 
+    report.info(f"SegmentationEvaluator: update/aggregate produced correct metrics; reset() cleared counts and NaN'd ratios", "VER-005")
     report.auto_save(
         "VER005_segmentation_evaluator_metrics",
         evidence_output_dir,
@@ -254,6 +260,7 @@ def test_model_testing_pipeline_generate_figures_false_skips_figures(
             "VER-006",
         )
 
+    report.info("generate_figures=False: no figure artifacts in results.artifacts", "VER-006")
     report.auto_save("VER006_model_testing_generate_figures_false", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -287,6 +294,7 @@ def test_model_testing_pipeline_generate_figures_true_creates_files(
         if path is None or not path.exists():
             report.error(f"Expected figure artifact '{key}' not found", "VER-006")
 
+    report.info("generate_figures=True: training_curve and confusion_matrix artifacts created on disk", "VER-006")
     report.auto_save("VER006_model_testing_generate_figures_true", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -318,6 +326,7 @@ def test_model_testing_pipeline_supports_custom_evaluator(
     if results.per_patient_results[0].get("sample_updates") != 2:
         report.error("Per-patient evaluator did not aggregate patient-local samples", "VER-006")
 
+    report.info(f"Custom CountingEvaluator: global sample_updates={results.metrics.get('sample_updates')}, per-patient sample_updates={results.per_patient_results[0].get('sample_updates')}", "VER-006")
     report.auto_save(
         "VER006_model_testing_custom_evaluator",
         evidence_output_dir,

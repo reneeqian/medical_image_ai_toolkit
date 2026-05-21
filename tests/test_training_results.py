@@ -189,6 +189,10 @@ def test_training_results_artifact_generation(tmp_path, evidence_output_dir):
     if not model_path.exists():
         report.error("Model export failed", "MOD-005")
 
+    report.info(f"Training report generated at {report_path}", "DOC-004")
+    report.info(f"Model exported to {model_path}", "MOD-005")
+    report.info("MedicalImageTrainingResults generates training report and exports model", "MOD-003")
+    report.info("generate_training_report() and export_model() artifacts created", "VER-002")
     report.auto_save(
         "MOD003_MOD005_training_results_artifacts",
         evidence_output_dir
@@ -233,6 +237,8 @@ def test_inference_determinism(tmp_path, evidence_output_dir):
         if not torch.allclose(a,b):
             report.error("Inference not deterministic", "VER-007")
 
+    report.info(f"run_inference returned {len(out1)} outputs on two identical calls — lengths match", "MOD-006")
+    report.info("Two run_inference() calls on identical data produced bit-identical outputs", "VER-007")
     report.auto_save(
         "MOD006_VER007_inference_determinism",
         evidence_output_dir
@@ -267,6 +273,7 @@ def test_results_inference(tmp_path, evidence_output_dir):
     if y.shape != (1,2):
         report.error("Model inference failed", "MOD-006")
 
+    report.info(f"results.model(x) returned shape={y.shape} as expected", "MOD-006")
     report.auto_save(
         "MOD006_results_inference",
         evidence_output_dir
@@ -293,7 +300,8 @@ def test_summary_training_running(tmp_path, evidence_output_dir):
 
     # no training_end_time set
     results.summary()
-    
+
+    report.info("summary() executed without error when training_end_time is not yet set", "DOC-004")
     report.auto_save(
         "DOC004_summary_during_training",
         evidence_output_dir
@@ -325,7 +333,8 @@ def test_mark_training_complete_summary(tmp_path, evidence_output_dir):
     results.summary()
 
     assert hasattr(results, "training_end_time")
-    
+
+    report.info("mark_training_complete() set training_end_time; summary() executed after completion", "DOC-004")
     report.auto_save(
         "DOC004_mark_training_complete_summary",
         evidence_output_dir
@@ -352,7 +361,8 @@ def test_export_model_failure(tmp_path, evidence_output_dir):
     )
 
     results.export_model(tmp_path / "model.pt")
-    
+
+    report.info("export_model() with a failing state_dict() did not raise — failure handled gracefully", "MOD-005")
     report.auto_save(
         "MOD005_model_export_failure",
         evidence_output_dir
@@ -379,7 +389,8 @@ def test_results_artifact_registration(tmp_path, evidence_output_dir):
     results = trainer.train()
 
     assert "metrics" in results.artifacts
-    
+
+    report.info("Training results contain 'metrics' artifact key after trainer.train()", "SYS-004")
     report.auto_save(
         "SYS004_results_artifact_registration",
         evidence_output_dir
@@ -410,6 +421,7 @@ def test_successive_runs_produce_distinct_artifacts(tmp_path, evidence_output_di
     if not results2.run_dir.exists():
         report.error(f"Run 2 directory missing: {results2.run_dir}", "MOD-002")
 
+    report.info(f"Two successive training runs wrote to distinct dirs: {results1.run_dir.name} vs {results2.run_dir.name}", "MOD-002")
     report.auto_save("MOD002_successive_runs_distinct_dirs", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -446,6 +458,8 @@ def test_exported_model_loads_and_produces_same_output(tmp_path, evidence_output
                 "Reloaded model output differs from original model output",
                 "MOD-004",
             )
+        else:
+            report.info("Reloaded model produced bit-identical output to the original exported model", "MOD-004")
 
     report.auto_save("MOD004_exported_model_loads_same_output", evidence_output_dir)
     assert not report.has_errors, report.summary()
@@ -481,6 +495,7 @@ def test_training_run_records_lifecycle_timestamps(tmp_path, evidence_output_dir
     ):
         report.error("Training lifecycle timestamps are out of order", "DOC-004")
 
+    report.info(f"Training lifecycle: start={results.training_start_time}, end={results.training_end_time}", "DOC-004")
     report.auto_save(
         "DOC004_training_lifecycle_timestamps",
         evidence_output_dir

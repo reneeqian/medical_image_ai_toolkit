@@ -61,6 +61,7 @@ def test_valid_patient_sample_passes_contract(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Valid PatientSample passed all contract checks — 3D volume, positive spacing, non-empty patient_id", "DAT-001")
     report.auto_save("DAT001_valid_patient_sample", evidence_output_dir)
 
     assert not report.has_errors, report.summary()
@@ -83,6 +84,7 @@ def test_volume_must_be_3d(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected 2D volume — image_volume must be 3D", "DAT-001")
     report.auto_save("DAT001_volume_not_3d", evidence_output_dir)
 
     assert report.has_errors
@@ -103,6 +105,7 @@ def test_spacing_must_be_positive(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected non-positive spacing value (-1.0)", "DAT-001")
     report.auto_save("DAT001_spacing_invalid", evidence_output_dir)
 
     assert report.has_errors
@@ -123,6 +126,7 @@ def test_patient_id_required(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected empty patient_id string", "DAT-001")
     report.auto_save("DAT001_patient_id_missing", evidence_output_dir)
 
     assert report.has_errors
@@ -149,6 +153,7 @@ def test_dense_mask_annotations_allowed(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract accepted dense numpy mask as valid annotation type", "DAT-002")
     report.auto_save("DAT002_dense_mask_annotation", evidence_output_dir)
 
     assert not report.has_errors, report.summary()
@@ -169,6 +174,7 @@ def test_invalid_annotation_type_rejected(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected string as annotation — only ndarray or AnnotationBundle accepted", "DAT-002")
     report.auto_save("DAT002_invalid_annotation_type", evidence_output_dir)
 
     assert report.has_errors
@@ -192,6 +198,7 @@ def test_missing_annotations_allowed_when_not_required(evidence_output_dir):
     )
 
     report.issues.extend(contract.issues)
+    report.info("Contract passed with annotations=None when require_annotations=False", "DAT-002")
     report.auto_save("DAT002_annotations_optional", evidence_output_dir)
 
     assert not report.has_errors
@@ -224,6 +231,7 @@ def test_roi_slice_out_of_bounds(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected ROI at slice_index=50 — volume has only 8 slices", "DAT-003")
     report.auto_save("DAT003_slice_out_of_bounds", evidence_output_dir)
 
     assert report.has_errors
@@ -262,6 +270,7 @@ def test_roi_coordinates_out_of_bounds(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected contour with x=200 outside 32-pixel volume width", "DAT-003")
     report.auto_save("DAT003_coordinates_out_of_bounds", evidence_output_dir)
 
     assert report.has_errors
@@ -292,6 +301,7 @@ def test_roi_contour_shape_validation(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected 1D contour array — contour must be shape (N, 2)", "DAT-003")
     report.auto_save("DAT003_invalid_contour_shape", evidence_output_dir)
 
     assert report.has_errors
@@ -314,6 +324,7 @@ def test_annotations_required_missing(evidence_output_dir):
     )
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected annotations=None when require_annotations=True", "DAT-002")
     report.auto_save("DAT002_annotations_required_missing", evidence_output_dir)
 
     assert report.has_errors
@@ -335,6 +346,7 @@ def test_vector_rois_none(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract accepted AnnotationBundle with vector_rois=None — no ROI data is valid", "DAT-002")
     report.auto_save("DAT002_vector_rois_none", evidence_output_dir)
 
     assert not report.has_errors
@@ -356,6 +368,7 @@ def test_vector_rois_not_dict(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected vector_rois as a list — must be dict keyed by slice index", "DAT-002")
     report.auto_save("DAT002_vector_rois_not_dict", evidence_output_dir)
 
     assert report.has_errors
@@ -383,6 +396,7 @@ def test_slice_index_not_int(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected string key 'bad_index' — vector_rois keys must be integers", "DAT-003")
     report.auto_save("DAT003_slice_index_not_int", evidence_output_dir)
 
     assert report.has_errors
@@ -410,6 +424,7 @@ def test_rois_not_list(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected bare VectorROI as slice value — must be a list of VectorROI", "DAT-003")
     report.auto_save("DAT003_rois_not_list", evidence_output_dir)
 
     assert report.has_errors
@@ -435,6 +450,7 @@ def test_roi_wrong_type(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected string element in ROI list — each item must be VectorROI", "DAT-003")
     report.auto_save("DAT003_roi_wrong_type", evidence_output_dir)
 
     assert report.has_errors
@@ -470,6 +486,7 @@ def test_roi_y_out_of_bounds(evidence_output_dir):
     contract = enforce_patient_sample_contract(sample)
 
     report.issues.extend(contract.issues)
+    report.info("Contract correctly rejected contour with y=1000 outside 32-pixel volume height", "DAT-003")
     report.auto_save("DAT003_y_out_of_bounds", evidence_output_dir)
 
     assert report.has_errors
