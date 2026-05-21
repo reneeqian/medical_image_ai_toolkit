@@ -35,14 +35,14 @@ def test_project_documentation_structure(
 
     report.info(
         message="Checking for requirements.yaml existence",
-        requirement_tag="documentation",
+        requirement_tag="DOC-002",
         context=str(requirements_path),
     )
 
     if not requirements_path.exists():
         report.error(
             message="requirements.yaml not found in docs directory",
-            requirement_tag="documentation",
+            requirement_tag="DOC-002",
         )
     else:
         try:
@@ -51,7 +51,7 @@ def test_project_documentation_structure(
         except Exception as e:
             report.error(
                 message=f"requirements.yaml failed to parse: {e}",
-                requirement_tag="documentation",
+                requirement_tag="DOC-002",
             )
             data = None
 
@@ -65,7 +65,7 @@ def test_project_documentation_structure(
             if not project_name:
                 report.error(
                     message="metadata.project field missing or empty",
-                    requirement_tag="documentation",
+                    requirement_tag="DOC-002",
                 )
 
             # ---- Requirements list existence ----
@@ -74,7 +74,7 @@ def test_project_documentation_structure(
             if not requirements or not isinstance(requirements, list):
                 report.error(
                     message="requirements list missing or empty",
-                    requirement_tag="documentation",
+                    requirement_tag="DOC-002",
                 )
             else:
                 prefixes_present = set()
@@ -91,7 +91,12 @@ def test_project_documentation_structure(
                 if missing_prefixes:
                     report.error(
                         message=f"Missing required requirement categories: {sorted(missing_prefixes)}",
-                        requirement_tag="documentation",
+                        requirement_tag="DOC-002",
+                    )
+                else:
+                    report.info(
+                        message=f"requirements.yaml valid — {len(requirements)} requirements covering {sorted(required_prefixes)}",
+                        requirement_tag="DOC-002",
                     )
 
     # ============================================================
@@ -100,14 +105,14 @@ def test_project_documentation_structure(
 
     report.info(
         message="Checking for README.md existence",
-        requirement_tag="documentation",
+        requirement_tag="DOC-001",
         context=str(readme_path),
     )
 
     if not readme_path.exists():
         report.error(
             message="README.md not found in project root",
-            requirement_tag="documentation",
+            requirement_tag="DOC-001",
         )
     else:
         content = readme_path.read_text(encoding="utf-8")
@@ -120,7 +125,12 @@ def test_project_documentation_structure(
         if not has_heading:
             report.error(
                 message="README.md does not contain any Markdown headings",
-                requirement_tag="documentation",
+                requirement_tag="DOC-001",
+            )
+        else:
+            report.info(
+                message="README.md exists and contains at least one Markdown heading",
+                requirement_tag="DOC-001",
             )
 
     # ============================================================
@@ -201,6 +211,11 @@ def test_readme_describes_training_workflow(
             report.error(
                 "README.md does not mention training workflow "
                 f"(checked: {keywords})",
+                "DOC-003",
+            )
+        else:
+            report.info(
+                f"README.md describes training workflow — found one of {keywords}",
                 "DOC-003",
             )
 

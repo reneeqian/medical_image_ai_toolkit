@@ -238,6 +238,9 @@ def test_training_pipeline_generates_artifacts(
             "VER-002"
         )
 
+    report.info("Training returned a results object (SYS-002, SYS-004)", "SYS-002")
+    report.info(f"Artifact directory created at {artifact_dir}", "TRN-004")
+    report.info(f"metrics.json written at {metrics_file}", "VER-002")
     report.auto_save(
         "SYS002_TRN004_training_pipeline_generates_artifacts",
         evidence_output_dir
@@ -358,6 +361,8 @@ def test_training_is_deterministic(
             "VER-001"
         )
 
+    report.info("Two training runs with identical data and seeds produced hash-identical metrics.json files", "VER-001")
+    report.info("Training is deterministic given same seed and data order", "TRN-006")
     report.auto_save(
         "VER001_training_is_deterministic",
         evidence_output_dir
@@ -391,6 +396,7 @@ def test_dataset_partitions_do_not_overlap(
     if set(val_ids) & set(test_ids):
         report.error("Val/Test overlap", "VER-003")
 
+    report.info(f"No partition overlap: train({len(train_ids)}), val({len(val_ids)}), test({len(test_ids)})", "VER-003")
     report.auto_save(
         "VER003_dataset_partition_separation",
         evidence_output_dir
@@ -422,6 +428,8 @@ def test_trainer_sanity_check(tmp_path, evidence_output_dir):
 
     trainer.sanity_check()
 
+    report.info("MedicalImageTrainer.sanity_check() executed without error on a minimal DummyDatasource", "SYS-002")
+    report.info("TrainingConfig is accessible to sanity check without configuration errors", "SYS-003")
     report.auto_save(
         "SYS002_SYS003_trainer_sanity_check",
         evidence_output_dir
@@ -447,7 +455,8 @@ def test_training_without_partitions_fails(tmp_path, evidence_output_dir):
 
     with pytest.raises(RuntimeError):
         trainer.train()
-    
+
+    report.info("trainer.train() raised RuntimeError when datasource has no partitions", "SYS-002")
     report.auto_save(
         "SYS002_training_without_partitions_fails",
         evidence_output_dir
@@ -473,7 +482,8 @@ def test_training_without_task_fails(tmp_path, evidence_output_dir):
 
     with pytest.raises(ValueError):
         trainer.train()
-    
+
+    report.info("trainer.train() raised ValueError when task=None — task is required before training", "TRN-001")
     report.auto_save(
         "TRN001_training_without_task_fails",
         evidence_output_dir
@@ -503,6 +513,7 @@ def test_training_respects_device(tmp_path, evidence_output_dir):
     for p in model.parameters():
         assert p.device.type == "cpu"
 
+    report.info("All model parameters remain on cpu after training with device='cpu'", "TRN-001")
     report.auto_save(
         "TRN001_training_respects_device",
         evidence_output_dir
@@ -533,7 +544,8 @@ def test_training_with_no_patients(tmp_path, evidence_output_dir):
     results = trainer.train()
 
     assert results.metrics["num_train_samples"] == 0
-    
+
+    report.info("Training with empty dataset completed successfully with num_train_samples=0", "SYS-002")
     report.auto_save(
         "SYS002_training_with_no_patients",
         evidence_output_dir
@@ -575,6 +587,7 @@ def test_early_stop_loss_threshold_halts_training(tmp_path, evidence_output_dir)
     if "loss_threshold" not in (results.metrics.get("early_stop_reason") or ""):
         report.error("early_stop_reason does not name loss_threshold", "TRN-005")
 
+    report.info(f"Loss threshold early stop: epochs_trained={results.metrics.get('epochs_trained')}, reason={results.metrics.get('early_stop_reason')!r}", "TRN-005")
     report.auto_save("TRN005_early_stop_loss_threshold", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -612,6 +625,7 @@ def test_early_stop_plateau_halts_training(tmp_path, evidence_output_dir):
     if "plateau" not in (results.metrics.get("early_stop_reason") or ""):
         report.error("early_stop_reason does not name plateau", "TRN-005")
 
+    report.info(f"Plateau early stop: epochs_trained={results.metrics.get('epochs_trained')}, reason={results.metrics.get('early_stop_reason')!r}", "TRN-005")
     report.auto_save("TRN005_early_stop_plateau", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -641,6 +655,7 @@ def test_early_stop_disabled_runs_all_epochs(tmp_path, evidence_output_dir):
     if results.metrics.get("early_stop_reason") is not None:
         report.error("early_stop_reason should be None when early_stop=False", "TRN-005")
 
+    report.info(f"early_stop=False: all 3 epochs ran, early_stop_reason={results.metrics.get('early_stop_reason')!r}", "TRN-005")
     report.auto_save("TRN005_early_stop_disabled", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -678,6 +693,8 @@ def test_val_evaluator_metrics_appear_in_history(tmp_path, evidence_output_dir):
                 "TRN-008",
             )
 
+    report.info(f"val_loss and custom_metric appear in all {len(results.history)} history entries", "TRN-006")
+    report.info("val_evaluator aggregate() keys merged into per-epoch history entries", "TRN-008")
     report.auto_save("TRN006_TRN008_val_evaluator_metrics_in_history", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -717,6 +734,7 @@ def test_training_pipeline_stops_on_dataset_validation_errors(tmp_path, evidence
     with pytest.raises(RuntimeError, match="Dataset validation failed"):
         pipeline.run()
 
+    report.info("TrainingPipeline raised RuntimeError('Dataset validation failed') for patient with negative spacing", "SYS-005")
     report.auto_save(
         "SYS005_training_pipeline_stops_on_invalid_dataset",
         evidence_output_dir
@@ -756,6 +774,8 @@ def test_training_pipeline_full_run(tmp_path, evidence_output_dir):
     if not partitions_path or not Path(partitions_path).exists():
         report.error("partitions artifact not written", "TRN-004")
 
+    report.info("TrainingPipeline full run wrote model.pt and partitions.json artifacts", "TRN-004")
+    report.info("TrainingPipeline returned results object with artifact paths", "SYS-002")
     report.auto_save("TRN004_SYS002_training_pipeline_full_run", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -785,6 +805,7 @@ def test_checkpoint_save_creates_files(tmp_path, evidence_output_dir):
     if not (run_dir / "checkpoint_latest.pt").exists():
         report.error("checkpoint_latest.pt not created", "MOD-002")
 
+    report.info("checkpoint_epoch_001.pt, checkpoint_epoch_002.pt, and checkpoint_latest.pt all created with checkpoint_every=1", "MOD-002")
     report.auto_save("MOD002_checkpoint_save_creates_files", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -821,6 +842,7 @@ def test_checkpoint_resume_continues_from_saved_epoch(tmp_path, evidence_output_
             "MOD-004",
         )
 
+    report.info(f"Checkpoint resume: epochs_trained={epochs_trained} (1 from checkpoint + 1 new)", "MOD-004")
     report.auto_save("MOD004_checkpoint_resume", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -835,5 +857,6 @@ def test_sanity_check_reports_partition_sizes(tmp_path, evidence_output_dir):
     trainer = MedicalImageTrainer(ds, TinyConvNet(), TrainingConfig())
     trainer.sanity_check()
 
+    report.info("sanity_check() with partitioned datasource reported partition sizes without error", "SYS-003")
     report.auto_save("SYS003_sanity_check_with_partitions", evidence_output_dir)
     assert not report.has_errors, report.summary()
