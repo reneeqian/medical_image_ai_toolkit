@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from regulatory_tools.testing import run_tests_and_trace
+from regulatory_tools.testing.run_tests_and_trace import run_tests_and_trace
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
