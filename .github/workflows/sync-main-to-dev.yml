@@ -1,0 +1,27 @@
+name: Sync main into dev
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge main into dev
+        run: |
+          git checkout dev
+          git merge origin/main --no-edit -m "chore: sync main into dev [skip ci]"
+          git push origin dev
