@@ -1,20 +1,35 @@
 soup:
   - name: numpy
     version: "2.2.6"
-    purpose: "Array operations for image volume manipulation and data contracts"
+    intended_use: "Array operations for image volume manipulation and data contracts"
     license: BSD-3-Clause
+    risk: medium
+    verified_by: pip-audit
 
   - name: torch
-    version: "2.9.1"
-    purpose: "Deep learning model training, inference, and evaluation pipelines"
+    version: "2.12.0"
+    intended_use: "Deep learning model training, inference, and evaluation pipelines"
     license: BSD-3-Clause
+    risk: high
+    verified_by: pip-audit
 
   - name: matplotlib
-    version: "3.10.8"
-    purpose: "Visualization for training plots, confusion matrices, and PDF reports"
+    version: "3.10.9"
+    intended_use: "Visualization for training plots, confusion matrices, and PDF reports"
     license: PSF
+    risk: low
+    verified_by: pip-audit
+
+  - name: idna
+    version: "3.15"
+    intended_use: "Internationalized domain names; pinned ==3.15 to close CVE-2026-45409"
+    license: BSD-3-Clause
+    risk: low
+    verified_by: pip-audit
 
   - name: forge-utils
     version: "0.2.0"
-    purpose: "Regulatory health grading and traceability infrastructure"
+    intended_use: "Regulatory health grading and traceability infrastructure"
     license: Internal
+    risk: low
+    verified_by: "pip-audit, internal review (pinned git tag @v0.2.0)"

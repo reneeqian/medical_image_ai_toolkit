@@ -19,18 +19,9 @@ class DummyTask(TrainingTaskDefinition):
 
 
 @pytest.mark.requirement("SYS-003")
-@pytest.mark.requirement("TRN-001")
-def test_training_config_initialization(evidence_output_dir):
-    report = EvidenceReport(subject="TrainingConfig field initialization")
-    task = DummyTask()
-
-    config = TrainingConfig(
-        epochs=5,
-        batch_size=4,
-        learning_rate=1e-3,
-        device="cpu",
-        task=task,
-    )
+def test_training_config_stores_hyperparameters(evidence_output_dir):
+    report = EvidenceReport(subject="SYS-003: TrainingConfig stores epochs, batch_size, learning_rate, and device")
+    config = TrainingConfig(epochs=5, batch_size=4, learning_rate=1e-3, device="cpu", task=DummyTask())
 
     if config.epochs != 5:
         report.error(f"epochs wrong: {config.epochs}", "SYS-003")
@@ -40,12 +31,23 @@ def test_training_config_initialization(evidence_output_dir):
         report.error(f"learning_rate wrong: {config.learning_rate}", "SYS-003")
     if config.device != "cpu":
         report.error(f"device wrong: {config.device}", "SYS-003")
-    if config.task is not task:
-        report.error("task not stored correctly", "TRN-001")
 
-    report.info(f"TrainingConfig fields: epochs={config.epochs}, batch_size={config.batch_size}, lr={config.learning_rate}, device={config.device}", "SYS-003")
-    report.info("task stored and retrieved correctly from TrainingConfig", "TRN-001")
-    report.auto_save("SYS003_TRN001_training_config_init", evidence_output_dir)
+    report.info(f"TrainingConfig: epochs={config.epochs}, batch_size={config.batch_size}, lr={config.learning_rate}, device={config.device}", "SYS-003")
+    report.auto_save("SYS003_training_config_stores_hyperparameters", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("TRN-001")
+def test_training_config_stores_task(evidence_output_dir):
+    report = EvidenceReport(subject="TRN-001: TrainingConfig stores and exposes the task definition")
+    task = DummyTask()
+    config = TrainingConfig(task=task)
+
+    if config.task is not task:
+        report.error("task not stored correctly — config.task is not the same object", "TRN-001")
+
+    report.info("config.task is the same object passed at construction", "TRN-001")
+    report.auto_save("TRN001_training_config_stores_task", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 

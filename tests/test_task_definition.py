@@ -27,18 +27,12 @@ class DummyPatientSample:
 
 
 @pytest.mark.requirement("DAT-009")
-@pytest.mark.requirement("TRN-008")
-def test_task_generates_aligned_samples(evidence_output_dir):
-    
-    report = EvidenceReport(subject="Task generates aligned input-target samples")
-    
+def test_task_generates_matched_input_target_shapes(evidence_output_dir):
+    report = EvidenceReport(subject="DAT-009: generate_training_samples yields input and target tensors with matching shapes")
+
     task = DummyTask()
     sample = DummyPatientSample()
-
-    gen = task.generate_training_samples(sample)
-
-    item = next(gen)
-
+    item = next(task.generate_training_samples(sample))
     x = item["input"]
     y = item["target"]
 
@@ -46,12 +40,26 @@ def test_task_generates_aligned_samples(evidence_output_dir):
     assert isinstance(y, torch.Tensor)
     assert x.shape == y.shape
 
-    report.info(f"generate_training_samples yielded item with input shape={x.shape} and target shape={y.shape} — shapes match", "DAT-009")
-    report.info("Task generates aligned input-target tensor pairs for training", "TRN-008")
-    report.auto_save(
-        "TRN008_task_sample_alignment",
-        evidence_output_dir
-    )
+    report.info(f"generate_training_samples: input shape={x.shape}, target shape={y.shape} — match", "DAT-009")
+    report.auto_save("DAT009_task_matched_input_target_shapes", evidence_output_dir)
+    assert not report.has_errors, report.summary()
+
+
+@pytest.mark.requirement("TRN-008")
+def test_task_generate_training_samples_interface(evidence_output_dir):
+    report = EvidenceReport(subject="TRN-008: generate_training_samples yields dict with 'input' and 'target' keys")
+
+    task = DummyTask()
+    sample = DummyPatientSample()
+    item = next(task.generate_training_samples(sample))
+
+    if "input" not in item:
+        report.error("Yielded dict missing 'input' key", "TRN-008")
+    if "target" not in item:
+        report.error("Yielded dict missing 'target' key", "TRN-008")
+
+    report.info(f"generate_training_samples yielded dict with keys: {list(item.keys())}", "TRN-008")
+    report.auto_save("TRN008_task_generate_training_samples_interface", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 

@@ -1,5 +1,6 @@
 metadata:
   project: medical_image_ai_toolkit
+  samd_class: B  # IEC 62304 §4.3 — failure can result in non-serious injury (depended on by Class C device)
   version: 1.0
   description: >
     Reusable medical imaging AI infrastructure with explicit contracts,
