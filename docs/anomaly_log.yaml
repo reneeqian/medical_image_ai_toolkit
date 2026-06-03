@@ -1,0 +1,32 @@
+metadata:
+  project: medical-image-ai-toolkit
+  standard: IEC 62304 §9
+  description: >
+    Formal problem resolution record. Each entry represents a known anomaly
+    in the software. Open anomalies must be resolved or formally deferred
+    before a version baseline is tagged.
+
+anomalies:
+  - id: ANO-001
+    date: "2026-05-26"
+    summary: "test_patient_sample_contract failures — Patient Sample Structure Validation"
+    affected_requirements: [DAT-001]
+    severity: major
+    status: open
+    resolution: "Under investigation"
+
+  - id: ANO-002
+    date: "2026-05-26"
+    summary: "test_patient_sample_contract failures — Annotation Structure Compliance"
+    affected_requirements: [DAT-002]
+    severity: major
+    status: open
+    resolution: "Under investigation"
+
+  - id: ANO-003
+    date: "2026-05-26"
+    summary: "test_patient_sample_contract failures — Annotation Boundary Validation"
+    affected_requirements: [DAT-003]
+    severity: major
+    status: open
+    resolution: "Under investigation"
