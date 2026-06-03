@@ -28,8 +28,8 @@ soup:
     verified_by: pip-audit
 
   - name: forge-utils
-    version: "0.2.0"
+    version: "0.3.0"
     intended_use: "Regulatory health grading and traceability infrastructure"
     license: Internal
     risk: low
-    verified_by: "pip-audit, internal review (pinned git tag @v0.2.0)"
+    verified_by: "pip-audit, internal review (pinned git tag @v0.3.0)"
