@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      statuses: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,18 +21,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Merge main into dev and push
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           git checkout dev
-          git merge origin/main --no-edit -m "chore: sync main into dev [skip ci]"
-          SHA=$(git rev-parse HEAD)
-          # Mark forge-health as passing for the sync commit so the branch
-          # protection status check is satisfied. The merged content came
-          # entirely from main, which already requires forge-health to pass.
-          gh api repos/${{ github.repository }}/statuses/$SHA \
-            -X POST \
-            -f state=success \
-            -f context=forge-health \
-            -f description="Sync: content already validated on main"
+          git merge origin/main --no-edit
           git push origin dev
