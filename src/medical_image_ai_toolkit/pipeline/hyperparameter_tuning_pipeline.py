@@ -148,7 +148,9 @@ class HyperparameterTuningPipeline:
 
         _W = 68
         print("\n" + "=" * _W)
-        print(f"  HYPERPARAMETER TUNING  |  {len(trial_params_list)} trial(s)  |  {self.search_strategy} search")
+        print(
+            f"  HYPERPARAMETER TUNING  |  {len(trial_params_list)} trial(s)  |  {self.search_strategy} search"
+        )
         print("=" * _W)
         for k, v in self.space._params.items():
             print(f"  {k}: {v}")
@@ -161,7 +163,9 @@ class HyperparameterTuningPipeline:
         trial_configs: list[TrainingConfig] = []
 
         for trial_id, params in enumerate(trial_params_list):
-            logger.info("--- Trial %d/%d  params=%s ---", trial_id, len(trial_params_list) - 1, params)
+            logger.info(
+                "--- Trial %d/%d  params=%s ---", trial_id, len(trial_params_list) - 1, params
+            )
             trial_dir = tuning_run_dir / f"trial_{trial_id:03d}"
             trial_dir.mkdir(parents=True, exist_ok=True)
 
@@ -199,14 +203,16 @@ class HyperparameterTuningPipeline:
             # Running leaderboard
             sorted_results = sorted(
                 trial_results,
-                key=lambda t: (t.best_val_loss if t.best_val_loss is not None else t.final_loss),
+                key=lambda t: t.best_val_loss if t.best_val_loss is not None else t.final_loss,
             )
             print(f"\n  {'#':<5} {'params':<30} {'loss':<12} {'val_loss':<12} {'epochs'}")
-            print(f"  {'-'*5} {'-'*30} {'-'*12} {'-'*12} {'-'*6}")
+            print(f"  {'-' * 5} {'-' * 30} {'-' * 12} {'-' * 12} {'-' * 6}")
             for rank, t in enumerate(sorted_results):
                 v = f"{t.best_val_loss:.6f}" if t.best_val_loss is not None else "—"
                 marker = " *" if t.trial_id == sorted_results[0].trial_id else ""
-                print(f"  {rank + 1:<5} {str(t.params):<30} {t.final_loss:<12.6f} {v:<12} {t.epochs_trained}{marker}")
+                print(
+                    f"  {rank + 1:<5} {str(t.params):<30} {t.final_loss:<12.6f} {v:<12} {t.epochs_trained}{marker}"
+                )
 
             logger.info(
                 "Trial %d complete: final_loss=%.6f  best_val_loss=%s",
@@ -221,9 +227,7 @@ class HyperparameterTuningPipeline:
                 "TRN-009",
             )
             if training_results.evidence_report is not None:
-                tuning_evidence.merge(
-                    training_results.evidence_report, f"trial={trial_id}"
-                )
+                tuning_evidence.merge(training_results.evidence_report, f"trial={trial_id}")
 
         # 5. Select best trial
         best_trial, best_model, best_config = _select_best_trial(
@@ -237,7 +241,11 @@ class HyperparameterTuningPipeline:
                 best_trial.params,
             )
             metric_key = "best_val_loss" if best_trial.best_val_loss is not None else "final_loss"
-            metric_val = best_trial.best_val_loss if best_trial.best_val_loss is not None else best_trial.final_loss
+            metric_val = (
+                best_trial.best_val_loss
+                if best_trial.best_val_loss is not None
+                else best_trial.final_loss
+            )
             tuning_evidence.info(
                 f"best_trial={best_trial.trial_id}  params={best_trial.params}"
                 f"  {metric_key}={metric_val:.6f}",
@@ -272,7 +280,11 @@ class HyperparameterTuningPipeline:
         _run_elapsed = time.time() - _run_start
         print("\n" + "=" * _W)
         if best_trial is not None:
-            best_metric = best_trial.best_val_loss if best_trial.best_val_loss is not None else best_trial.final_loss
+            best_metric = (
+                best_trial.best_val_loss
+                if best_trial.best_val_loss is not None
+                else best_trial.final_loss
+            )
             metric_label = "val_loss" if best_trial.best_val_loss is not None else "loss"
             print(
                 f"  TUNING COMPLETE  |  {len(trial_results)} trial(s)  |  {_run_elapsed:.1f}s total"

@@ -112,9 +112,9 @@ class MedicalImageModelTestingResults:
             print("Testing still running")
 
         # --- Run-level counts ---
-        mean_loss  = self.metrics.get("mean_loss")
+        mean_loss = self.metrics.get("mean_loss")
         n_patients = self.metrics.get("num_test_patients", 0)
-        n_samples  = self.metrics.get("num_test_samples", 0)
+        n_samples = self.metrics.get("num_test_samples", 0)
 
         print(f"\nPatients evaluated : {n_patients}")
         print(f"Total slices       : {n_samples}")
@@ -134,11 +134,11 @@ class MedicalImageModelTestingResults:
                     return self.metrics[key]
                 return num / denom if denom > 0 else float("nan")
 
-            dice      = _m("dice",      2 * tp,  2 * tp + fp + fn)
-            iou       = _m("iou",       tp,      tp + fp + fn)
-            precision = _m("precision", tp,      tp + fp)
-            recall    = _m("recall",    tp,      tp + fn)
-            accuracy  = _m("accuracy",  tp + tn, tp + fp + fn + tn)
+            dice = _m("dice", 2 * tp, 2 * tp + fp + fn)
+            iou = _m("iou", tp, tp + fp + fn)
+            precision = _m("precision", tp, tp + fp)
+            recall = _m("recall", tp, tp + fn)
+            accuracy = _m("accuracy", tp + tn, tp + fp + fn + tn)
 
             print("\nPixel-level confusion matrix")
             print("  (rows = actual, cols = predicted)")

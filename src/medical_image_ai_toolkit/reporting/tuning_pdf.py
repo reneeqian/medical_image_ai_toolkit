@@ -7,10 +7,13 @@ Pages
 2. Trial comparison horizontal bar chart
 3. Per-trial params + losses table
 """
+
 from __future__ import annotations
 
 import json
+
 import matplotlib
+
 matplotlib.use("Agg")
 
 from pathlib import Path
@@ -82,6 +85,7 @@ def generate_tuning_pdf(
 # Private helpers
 # ---------------------------------------------------------------------------
 
+
 def _metric_for_trial(t: dict) -> float | None:
     v = t.get("best_val_loss")
     if v is not None:
@@ -105,12 +109,23 @@ def _plot_trial_comparison(pdf, trials: list[dict], best_id) -> None:
     ax.set_title("Trial Comparison", fontsize=14, fontweight="bold")
     ax.grid(axis="x", alpha=0.3)
     for bar, loss in zip(bars, losses):
-        ax.text(bar.get_width() + max(losses) * 0.01, bar.get_y() + bar.get_height() / 2,
-                f"{loss:.5f}", va="center", fontsize=10)
+        ax.text(
+            bar.get_width() + max(losses) * 0.01,
+            bar.get_y() + bar.get_height() / 2,
+            f"{loss:.5f}",
+            va="center",
+            fontsize=10,
+        )
     # legend
     from matplotlib.patches import Patch
-    ax.legend(handles=[Patch(color="#FFD700", label="Best trial"),
-                        Patch(color="#2196F3", label="Other trials")], fontsize=10)
+
+    ax.legend(
+        handles=[
+            Patch(color="#FFD700", label="Best trial"),
+            Patch(color="#2196F3", label="Other trials"),
+        ],
+        fontsize=10,
+    )
     plt.tight_layout()
     pdf.savefig(fig, bbox_inches="tight")
     plt.close(fig)

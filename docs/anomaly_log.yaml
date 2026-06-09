@@ -30,3 +30,16 @@ anomalies:
     severity: major
     status: open
     resolution: "Under investigation"
+
+  - id: ANO-004
+    date: "2026-06-08"
+    summary: "SOUP CVE: torch 2.9.1 — PYSEC-2026-139 (deserialization in pt2 loading handler)"
+    affected_requirements: [RSK-001]
+    severity: low
+    status: open
+    resolution: >
+      No upstream fix available as of 2026-06-08. The vulnerability is exploitable only if a
+      local attacker supplies a malicious .pt2 file to the pt2 loading handler. medical_image_ai_toolkit
+      loads model checkpoints only from its own artifacts directory (controlled, local writes).
+      No untrusted .pt2 inputs exist in the training or inference pipeline. Risk accepted pending
+      upstream torch patch release.

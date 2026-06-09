@@ -45,11 +45,7 @@ def _trial_result_from_training_results(
     params: dict[str, Any],
     training_results: MedicalImageTrainingResults,
 ) -> TrialResult:
-    val_losses = [
-        entry["val_loss"]
-        for entry in training_results.history
-        if "val_loss" in entry
-    ]
+    val_losses = [entry["val_loss"] for entry in training_results.history if "val_loss" in entry]
     return TrialResult(
         trial_id=trial_id,
         params=params,
@@ -123,7 +119,9 @@ class HyperparameterTuningResults:
             print("No trials completed.")
             return
 
-        header = f"{'ID':>3}  {'params':<40}  {'final_loss':>12}  {'best_val_loss':>14}  {'epochs':>6}"
+        header = (
+            f"{'ID':>3}  {'params':<40}  {'final_loss':>12}  {'best_val_loss':>14}  {'epochs':>6}"
+        )
         print(header)
         print("-" * len(header))
         for tr in self.trial_results:

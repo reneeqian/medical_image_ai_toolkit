@@ -45,7 +45,8 @@ def find_run_dir(
         if _qualifies(candidate):
             return candidate
         matches = sorted(
-            p for p in runs_root.iterdir()
+            p
+            for p in runs_root.iterdir()
             if p.is_dir() and p.name.startswith(run_id) and _qualifies(p)
         )
         if matches:
