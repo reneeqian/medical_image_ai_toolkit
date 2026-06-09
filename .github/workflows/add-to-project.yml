@@ -7,10 +7,10 @@ on:
 
 jobs:
   add-to-project:
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/add-to-project@v2.0.0
         with:
           project-url: https://github.com/users/reneeqian/projects/3
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
-

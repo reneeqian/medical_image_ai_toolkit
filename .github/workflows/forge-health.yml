@@ -11,6 +11,7 @@ env:
 
 jobs:
   forge-health:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
 
     permissions:
