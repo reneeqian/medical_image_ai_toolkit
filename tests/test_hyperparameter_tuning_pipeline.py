@@ -125,7 +125,10 @@ def test_hyperparameter_space_grid_enumerates_all_combinations(evidence_output_d
     if len(set(as_tuples)) != 6:
         report.error("Duplicate combinations found in grid()", "TRN-009")
 
-    report.info(f"HyperparameterSpace grid enumerated {len(combos)} unique combinations for lr×epochs", "TRN-009")
+    report.info(
+        f"HyperparameterSpace grid enumerated {len(combos)} unique combinations for lr×epochs",
+        "TRN-009",
+    )
     report.auto_save("TRN009_hyperparameter_space_grid", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -146,18 +149,21 @@ def test_hyperparameter_space_random_sample(evidence_output_dir):
 
     large_sample = space.random_sample(100, seed=0)
     if len(large_sample) != 9:
-        report.error(
-            f"Expected all 9 combos when n > total, got {len(large_sample)}", "TRN-009"
-        )
+        report.error(f"Expected all 9 combos when n > total, got {len(large_sample)}", "TRN-009")
 
-    report.info(f"random_sample: seed-reproducible, correct count {len(sample_a)}, caps at total {len(large_sample)} when n>total", "TRN-009")
+    report.info(
+        f"random_sample: seed-reproducible, correct count {len(sample_a)}, caps at total {len(large_sample)} when n>total",
+        "TRN-009",
+    )
     report.auto_save("TRN009_hyperparameter_space_random_sample", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("TRN-002")
 def test_tuning_pipeline_runs_all_grid_trials(tmp_path, evidence_output_dir):
-    report = EvidenceReport(subject="TRN-002: tuning pipeline runs one trial per grid combination and creates run directories")
+    report = EvidenceReport(
+        subject="TRN-002: tuning pipeline runs one trial per grid combination and creates run directories"
+    )
 
     ds = _create_datasource(tmp_path)
     space = HyperparameterSpace(learning_rate=[1e-3, 1e-4])  # 2 trials
@@ -185,14 +191,19 @@ def test_tuning_pipeline_runs_all_grid_trials(tmp_path, evidence_output_dir):
         if not tr.run_dir.exists():
             report.error(f"Trial {tr.trial_id} run_dir does not exist: {tr.run_dir}", "TRN-002")
 
-    report.info(f"Tuning pipeline ran {len(results.trial_results)} grid trials; all run_dirs exist", "TRN-002")
+    report.info(
+        f"Tuning pipeline ran {len(results.trial_results)} grid trials; all run_dirs exist",
+        "TRN-002",
+    )
     report.auto_save("TRN002_tuning_pipeline_runs_all_grid_trials", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("TRN-010")
 def test_tuning_pipeline_creates_shared_partitions(tmp_path, evidence_output_dir):
-    report = EvidenceReport(subject="TRN-010: tuning pipeline creates shared partitions that persist across all trials")
+    report = EvidenceReport(
+        subject="TRN-010: tuning pipeline creates shared partitions that persist across all trials"
+    )
 
     ds = _create_datasource(tmp_path)
     space = HyperparameterSpace(learning_rate=[1e-3, 1e-4])
@@ -215,9 +226,14 @@ def test_tuning_pipeline_creates_shared_partitions(tmp_path, evidence_output_dir
     ).run()
 
     if not ds.has_partitions():
-        report.error("Datasource has no partitions after tuning run — shared partitions not created", "TRN-010")
+        report.error(
+            "Datasource has no partitions after tuning run — shared partitions not created",
+            "TRN-010",
+        )
 
-    report.info("Datasource has partitions after tuning pipeline run — shared across all trials", "TRN-010")
+    report.info(
+        "Datasource has partitions after tuning pipeline run — shared across all trials", "TRN-010"
+    )
     report.auto_save("TRN010_tuning_pipeline_shared_partitions", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -273,7 +289,10 @@ def test_tuning_pipeline_selects_best_trial(tmp_path, evidence_output_dir):
     if results.best_config is None:
         report.error("best_config is None after tuning", "TRN-011")
 
-    report.info(f"Tuning pipeline selected best_trial={results.best_trial.trial_id if results.best_trial else None} with lowest metric", "TRN-011")
+    report.info(
+        f"Tuning pipeline selected best_trial={results.best_trial.trial_id if results.best_trial else None} with lowest metric",
+        "TRN-011",
+    )
     report.auto_save("TRN011_tuning_pipeline_selects_best_trial", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -345,7 +364,9 @@ def test_tuning_pipeline_random_search_runs_n_trials(tmp_path, evidence_output_d
             "TRN-009",
         )
 
-    report.info(f"Random search with n_trials=2 ran exactly {len(results.trial_results)} trials", "TRN-009")
+    report.info(
+        f"Random search with n_trials=2 ran exactly {len(results.trial_results)} trials", "TRN-009"
+    )
     report.auto_save("TRN009_random_search_runs_n_trials", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -388,7 +409,10 @@ def test_tuning_pipeline_generates_report(tmp_path, evidence_output_dir):
                 if key not in data:
                     report.error(f"tuning_report.json missing key '{key}'", "TRN-004")
                 else:
-                    report.info(f"tuning_report.json contains all required keys: trial_results, best_trial, num_trials", "TRN-004")
+                    report.info(
+                        "tuning_report.json contains all required keys: trial_results, best_trial, num_trials",
+                        "TRN-004",
+                    )
 
     report.auto_save("TRN004_tuning_pipeline_generates_report", evidence_output_dir)
     assert not report.has_errors, report.summary()
@@ -401,7 +425,9 @@ def test_tuning_results_summary_prints_trial_table(tmp_path, evidence_output_dir
         TrialResult,
     )
 
-    report = EvidenceReport(subject="HyperparameterTuningResults.summary prints trial table and best-trial section")
+    report = EvidenceReport(
+        subject="HyperparameterTuningResults.summary prints trial table and best-trial section"
+    )
 
     # Case 1: trial with val_loss — covers the table rows and best_val_loss branch
     trial = TrialResult(
@@ -451,6 +477,9 @@ def test_tuning_results_summary_prints_trial_table(tmp_path, evidence_output_dir
         output_dir=tmp_path,
     ).summary()
 
-    report.info("HyperparameterTuningResults.summary() executed for trials with val_loss, without val_loss, and empty list", "TRN-011")
+    report.info(
+        "HyperparameterTuningResults.summary() executed for trials with val_loss, without val_loss, and empty list",
+        "TRN-011",
+    )
     report.auto_save("TRN011_tuning_results_summary", evidence_output_dir)
     assert not report.has_errors, report.summary()

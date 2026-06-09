@@ -1,6 +1,9 @@
 import pytest
 from regulatory_tools.evidence.evidence_report import EvidenceReport
-from medical_image_ai_toolkit.dataobjects.datasources.deterministic_split import DeterministicHoldoutSplit
+
+from medical_image_ai_toolkit.dataobjects.datasources.deterministic_split import (
+    DeterministicHoldoutSplit,
+)
 
 
 def _ids(n):
@@ -20,7 +23,10 @@ def test_split_partitions_are_non_overlapping(evidence_output_dir):
     if set(val) & set(test):
         report.error("Val/Test overlap detected", "VER-003")
 
-    report.info(f"No overlap detected between train({len(train)}), val({len(val)}), test({len(test)}) partitions", "VER-003")
+    report.info(
+        f"No overlap detected between train({len(train)}), val({len(val)}), test({len(test)}) partitions",
+        "VER-003",
+    )
     report.auto_save("VER003_split_non_overlapping", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -36,7 +42,9 @@ def test_split_is_deterministic(evidence_output_dir):
     if run1 != run2:
         report.error("Split results differ across runs with same seed", "VER-001")
 
-    report.info("Two calls with seed=42 on the same patient list produced identical splits", "VER-001")
+    report.info(
+        "Two calls with seed=42 on the same patient list produced identical splits", "VER-001"
+    )
     report.auto_save("VER001_split_deterministic", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -77,9 +85,9 @@ def test_split_covers_all_patients(evidence_output_dir):
 def test_split_max_caps_are_respected(evidence_output_dir):
     report = EvidenceReport(subject="DeterministicHoldoutSplit max caps")
 
-    train, val, test = DeterministicHoldoutSplit(
-        max_train=5, max_val=3, max_test=2
-    ).split(_ids(100))
+    train, val, test = DeterministicHoldoutSplit(max_train=5, max_val=3, max_test=2).split(
+        _ids(100)
+    )
 
     if len(train) > 5:
         report.error(f"Train partition exceeds max_train: {len(train)}", "VER-003")
@@ -88,7 +96,10 @@ def test_split_max_caps_are_respected(evidence_output_dir):
     if len(test) > 2:
         report.error(f"Test partition exceeds max_test: {len(test)}", "VER-003")
 
-    report.info(f"Partition max caps respected — train={len(train)}, val={len(val)}, test={len(test)}", "VER-003")
+    report.info(
+        f"Partition max caps respected — train={len(train)}, val={len(val)}, test={len(test)}",
+        "VER-003",
+    )
     report.auto_save("VER003_split_max_caps", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -103,6 +114,9 @@ def test_split_on_minimal_patient_count(evidence_output_dir):
     if total != 3:
         report.error(f"Expected 3 patients assigned, got {total}", "VER-003")
 
-    report.info(f"Minimal dataset of 3 patients fully assigned — train={len(train)}, val={len(val)}, test={len(test)}", "VER-003")
+    report.info(
+        f"Minimal dataset of 3 patients fully assigned — train={len(train)}, val={len(val)}, test={len(test)}",
+        "VER-003",
+    )
     report.auto_save("VER003_split_minimal_patients", evidence_output_dir)
     assert not report.has_errors, report.summary()

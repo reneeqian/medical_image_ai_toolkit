@@ -1,13 +1,12 @@
 import pytest
 import torch
-
-from medical_image_ai_toolkit.training.training_config import TrainingConfig
-from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
 from regulatory_tools.evidence.evidence_report import EvidenceReport
+
+from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
+from medical_image_ai_toolkit.training.training_config import TrainingConfig
 
 
 class DummyTask(TrainingTaskDefinition):
-
     def generate_training_samples(self, patient_sample):
         yield {
             "input": torch.zeros((1, 1)),
@@ -20,8 +19,12 @@ class DummyTask(TrainingTaskDefinition):
 
 @pytest.mark.requirement("SYS-003")
 def test_training_config_stores_hyperparameters(evidence_output_dir):
-    report = EvidenceReport(subject="SYS-003: TrainingConfig stores epochs, batch_size, learning_rate, and device")
-    config = TrainingConfig(epochs=5, batch_size=4, learning_rate=1e-3, device="cpu", task=DummyTask())
+    report = EvidenceReport(
+        subject="SYS-003: TrainingConfig stores epochs, batch_size, learning_rate, and device"
+    )
+    config = TrainingConfig(
+        epochs=5, batch_size=4, learning_rate=1e-3, device="cpu", task=DummyTask()
+    )
 
     if config.epochs != 5:
         report.error(f"epochs wrong: {config.epochs}", "SYS-003")
@@ -32,14 +35,19 @@ def test_training_config_stores_hyperparameters(evidence_output_dir):
     if config.device != "cpu":
         report.error(f"device wrong: {config.device}", "SYS-003")
 
-    report.info(f"TrainingConfig: epochs={config.epochs}, batch_size={config.batch_size}, lr={config.learning_rate}, device={config.device}", "SYS-003")
+    report.info(
+        f"TrainingConfig: epochs={config.epochs}, batch_size={config.batch_size}, lr={config.learning_rate}, device={config.device}",
+        "SYS-003",
+    )
     report.auto_save("SYS003_training_config_stores_hyperparameters", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("TRN-001")
 def test_training_config_stores_task(evidence_output_dir):
-    report = EvidenceReport(subject="TRN-001: TrainingConfig stores and exposes the task definition")
+    report = EvidenceReport(
+        subject="TRN-001: TrainingConfig stores and exposes the task definition"
+    )
     task = DummyTask()
     config = TrainingConfig(task=task)
 
@@ -77,7 +85,10 @@ def test_training_config_optimizer_class(evidence_output_dir):
     if config.optimizer is not torch.optim.Adam:
         report.error("Optimizer class not stored correctly", "MOD-001")
 
-    report.info("TrainingConfig stores optimizer class reference (torch.optim.Adam) without instantiating it", "MOD-001")
+    report.info(
+        "TrainingConfig stores optimizer class reference (torch.optim.Adam) without instantiating it",
+        "MOD-001",
+    )
     report.auto_save("MOD001_training_config_optimizer", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -97,7 +108,10 @@ def test_training_config_early_stop_defaults(evidence_output_dir):
     if config.plateau_min_delta != 1e-4:
         report.error(f"plateau_min_delta default wrong: {config.plateau_min_delta}", "TRN-005")
 
-    report.info("TrainingConfig early_stop defaults: early_stop=True, loss_threshold=0.01, plateau_patience=5, plateau_min_delta=1e-4", "TRN-005")
+    report.info(
+        "TrainingConfig early_stop defaults: early_stop=True, loss_threshold=0.01, plateau_patience=5, plateau_min_delta=1e-4",
+        "TRN-005",
+    )
     report.auto_save("TRN005_early_stop_defaults", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -131,8 +145,13 @@ def test_training_config_early_stop_custom_values(evidence_output_dir):
     if config.plateau_patience != 10:
         report.error(f"plateau_patience not stored correctly: {config.plateau_patience}", "TRN-005")
     if config.plateau_min_delta != 1e-3:
-        report.error(f"plateau_min_delta not stored correctly: {config.plateau_min_delta}", "TRN-005")
+        report.error(
+            f"plateau_min_delta not stored correctly: {config.plateau_min_delta}", "TRN-005"
+        )
 
-    report.info("Custom early stop values loss_threshold=0.05, plateau_patience=10, plateau_min_delta=1e-3 stored correctly", "TRN-005")
+    report.info(
+        "Custom early stop values loss_threshold=0.05, plateau_patience=10, plateau_min_delta=1e-3 stored correctly",
+        "TRN-005",
+    )
     report.auto_save("TRN005_early_stop_custom_values", evidence_output_dir)
     assert not report.has_errors, report.summary()

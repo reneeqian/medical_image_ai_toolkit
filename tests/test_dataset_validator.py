@@ -1,12 +1,13 @@
 """Tests for DatasetValidator (DAT-011)."""
+
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
+from medical_image_ai_toolkit.dataobjects.annotation_bundle import AnnotationBundle
 from medical_image_ai_toolkit.dataobjects.data_validation.dataset_validator import DatasetValidator
 from medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
-from medical_image_ai_toolkit.dataobjects.annotation_bundle import AnnotationBundle
 
 
 def _make_sample(pid="p1", shape=(5, 32, 32), spacing=(1.0, 1.0, 1.0), annotations=None):
@@ -56,7 +57,9 @@ def test_empty_dataset_produces_no_errors(evidence_output_dir):
         evidence.error("DatasetValidator reported errors for empty dataset", "DAT-011")
     if not total_msgs:
         evidence.error("Expected 'Total patients' INFO message not found", "DAT-011")
-    evidence.info("Empty dataset validated without errors and produced 'Total patients' summary", "DAT-011")
+    evidence.info(
+        "Empty dataset validated without errors and produced 'Total patients' summary", "DAT-011"
+    )
     evidence.auto_save("DAT011_empty_dataset_no_errors", evidence_output_dir)
     assert not evidence.has_errors, evidence.summary()
     assert not report.has_errors
@@ -85,7 +88,7 @@ def test_multiple_valid_patients_all_processed(evidence_output_dir):
     report = DatasetValidator(ds).run()
     if report.has_errors:
         evidence.error("DatasetValidator reported errors for 5 valid patients", "DAT-011")
-    evidence.info(f"All 5 valid patients processed without errors", "DAT-011")
+    evidence.info("All 5 valid patients processed without errors", "DAT-011")
     evidence.auto_save("DAT011_multiple_valid_patients", evidence_output_dir)
     assert not evidence.has_errors, evidence.summary()
     assert not report.has_errors
@@ -93,7 +96,9 @@ def test_multiple_valid_patients_all_processed(evidence_output_dir):
 
 @pytest.mark.requirement("DAT-011")
 def test_one_failing_patient_does_not_abort_others(evidence_output_dir):
-    evidence = EvidenceReport(subject="DAT-011: one failing patient does not abort validation of others")
+    evidence = EvidenceReport(
+        subject="DAT-011: one failing patient does not abort validation of others"
+    )
     ds = FakeDatasource(
         ["p1", "p2", "p3"],
         {
@@ -105,10 +110,15 @@ def test_one_failing_patient_does_not_abort_others(evidence_output_dir):
     report = DatasetValidator(ds).run()
     error_msgs = [i.message for i in report.issues if i.level == "ERROR"]
     if not report.has_errors:
-        evidence.error("Expected DatasetValidator to report errors for failing patient p2", "DAT-011")
+        evidence.error(
+            "Expected DatasetValidator to report errors for failing patient p2", "DAT-011"
+        )
     if len(error_msgs) != 1:
         evidence.error(f"Expected exactly 1 error message, got {len(error_msgs)}", "DAT-011")
-    evidence.info("Single failing patient produced exactly 1 error; other patients were still processed", "DAT-011")
+    evidence.info(
+        "Single failing patient produced exactly 1 error; other patients were still processed",
+        "DAT-011",
+    )
     evidence.auto_save("DAT011_one_failing_patient", evidence_output_dir)
     assert not evidence.has_errors, evidence.summary()
     assert report.has_errors
@@ -124,8 +134,13 @@ def test_all_patients_fail_reports_all_errors(evidence_output_dir):
     report = DatasetValidator(ds).run()
     errors = [i for i in report.issues if i.level == "ERROR"]
     if len(errors) != n:
-        evidence.error(f"Expected {n} errors for {n} failing patients, got {len(errors)}", "DAT-011")
-    evidence.info(f"All {n} failing patients produced {len(errors)} distinct error entries — no silent failures", "DAT-011")
+        evidence.error(
+            f"Expected {n} errors for {n} failing patients, got {len(errors)}", "DAT-011"
+        )
+    evidence.info(
+        f"All {n} failing patients produced {len(errors)} distinct error entries — no silent failures",
+        "DAT-011",
+    )
     evidence.auto_save("DAT011_all_patients_fail", evidence_output_dir)
     assert not evidence.has_errors, evidence.summary()
     assert len(errors) == n
@@ -140,7 +155,9 @@ def test_none_volume_triggers_contract_error(evidence_output_dir):
     report = DatasetValidator(ds).run()
     if not report.has_errors:
         evidence.error("Expected contract error for None image_volume", "DAT-011")
-    evidence.info("None image_volume correctly flagged as contract violation by DatasetValidator", "DAT-011")
+    evidence.info(
+        "None image_volume correctly flagged as contract violation by DatasetValidator", "DAT-011"
+    )
     evidence.auto_save("DAT011_none_volume_contract_error", evidence_output_dir)
     assert not evidence.has_errors, evidence.summary()
     assert report.has_errors
@@ -155,7 +172,10 @@ def test_2d_volume_triggers_contract_error(evidence_output_dir):
     report = DatasetValidator(ds).run()
     if not report.has_errors:
         evidence.error("Expected contract error for 2D image_volume", "DAT-011")
-    evidence.info("2D (non-3D) image_volume correctly flagged as contract violation by DatasetValidator", "DAT-011")
+    evidence.info(
+        "2D (non-3D) image_volume correctly flagged as contract violation by DatasetValidator",
+        "DAT-011",
+    )
     evidence.auto_save("DAT011_2d_volume_contract_error", evidence_output_dir)
     assert not evidence.has_errors, evidence.summary()
     assert report.has_errors
@@ -170,7 +190,9 @@ def test_negative_spacing_produces_warning_or_error(evidence_output_dir):
     non_info = [i for i in report.issues if i.level in ("ERROR", "WARN")]
     if not non_info:
         evidence.error("Expected WARN or ERROR for negative spacing, got none", "DAT-011")
-    evidence.info(f"Negative spacing produced {len(non_info)} WARN/ERROR issue(s) as expected", "DAT-011")
+    evidence.info(
+        f"Negative spacing produced {len(non_info)} WARN/ERROR issue(s) as expected", "DAT-011"
+    )
     evidence.auto_save("DAT011_negative_spacing_warn_or_error", evidence_output_dir)
     assert not evidence.has_errors, evidence.summary()
     assert non_info, "Expected WARN or ERROR for negative spacing"
@@ -216,7 +238,10 @@ def test_ingestor_report_is_set_before_iteration(evidence_output_dir):
     DatasetValidator(ds).run()
     if not captured or captured[0] is None:
         evidence.error("ingestor.report not set before iteration", "DAT-011")
-    evidence.info("ingestor.report is set to the EvidenceReport instance before get_patient_ids() is called", "DAT-011")
+    evidence.info(
+        "ingestor.report is set to the EvidenceReport instance before get_patient_ids() is called",
+        "DAT-011",
+    )
     evidence.auto_save("DAT011_ingestor_report_set_before_iteration", evidence_output_dir)
     assert not evidence.has_errors, evidence.summary()
     assert captured and captured[0] is not None, "ingestor.report not set before iteration"
