@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import matplotlib
+
 matplotlib.use("Agg")
 
 from pathlib import Path
@@ -35,8 +36,9 @@ def text_page(pdf: PdfPages, lines: list[tuple[str, str]], title: str) -> None:
 
     y = 0.88
     for label, value in lines:
-        ax.text(0.05, y, f"{label}:", fontsize=11, fontweight="bold",
-                transform=ax.transAxes, va="top")
+        ax.text(
+            0.05, y, f"{label}:", fontsize=11, fontweight="bold", transform=ax.transAxes, va="top"
+        )
         ax.text(0.42, y, str(value), fontsize=11, transform=ax.transAxes, va="top")
         y -= 0.07
 

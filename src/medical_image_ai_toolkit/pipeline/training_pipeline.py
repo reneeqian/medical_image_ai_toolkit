@@ -8,13 +8,19 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from regulatory_tools.evidence.evidence_report import EvidenceReport
-from medical_image_ai_toolkit.dataobjects.data_validation.dataset_validator import DatasetValidator, summarize_dataset_validation
+
+from medical_image_ai_toolkit.dataobjects.data_validation.dataset_validator import (
+    DatasetValidator,
+    summarize_dataset_validation,
+)
 from medical_image_ai_toolkit.training.medical_image_trainer import MedicalImageTrainer
 
 if TYPE_CHECKING:
     import torch.nn as nn
 
-    from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import MedicalImageDataSource
+    from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
+        MedicalImageDataSource,
+    )
     from medical_image_ai_toolkit.training.training_config import TrainingConfig
 
 logger = logging.getLogger(__name__)
@@ -77,7 +83,9 @@ class TrainingPipeline:
         print("=" * _W)
         print(f"  epochs      : {self.config.epochs}")
         print(f"  lr          : {self.config.learning_rate}")
-        print(f"  optimizer   : {getattr(self.config.optimizer, '__name__', self.config.optimizer)}")
+        print(
+            f"  optimizer   : {getattr(self.config.optimizer, '__name__', self.config.optimizer)}"
+        )
         print(f"  device      : {self.config.device}")
         print(f"  early_stop  : {self.config.early_stop}")
         if self.config.early_stop:
@@ -91,7 +99,7 @@ class TrainingPipeline:
         logger.info("=== PIPELINE START ===")
 
         # 1. Validate dataset
-        print(f"\n[1/4] Dataset validation")
+        print("\n[1/4] Dataset validation")
         _t = time.time()
         logger.info("Validating dataset...")
         ds_validator = DatasetValidator(self.datasource, req_provider=self.req_provider)
@@ -107,19 +115,19 @@ class TrainingPipeline:
             )
 
         # 2. Partition
-        print(f"\n[2/4] Partitioning")
+        print("\n[2/4] Partitioning")
         _t = time.time()
         logger.info("Partitioning dataset...")
         if not self.datasource.has_partitions():
             logger.info("Creating partitions...")
             self.datasource.create_partitions(self.config.split_strategy)
         train_n = len(self.datasource.get_train_ids())
-        val_n   = len(self.datasource.get_val_ids())
-        test_n  = len(self.datasource.get_test_ids())
+        val_n = len(self.datasource.get_val_ids())
+        test_n = len(self.datasource.get_test_ids())
         print(f"      train={train_n}  val={val_n}  test={test_n}  ({time.time() - _t:.1f}s)")
 
         # 3. Train
-        print(f"\n[3/4] Training")
+        print("\n[3/4] Training")
         logger.info("Training model...")
         trainer = MedicalImageTrainer(
             self.datasource,
@@ -141,7 +149,7 @@ class TrainingPipeline:
             print(f"      early stop: {stop_reason}")
 
         # 4. Export results
-        print(f"\n[4/4] Exporting artifacts")
+        print("\n[4/4] Exporting artifacts")
         _t = time.time()
         model_path = results.run_dir / "model.pt"
 
@@ -158,9 +166,7 @@ class TrainingPipeline:
         print(f"      ({time.time() - _t:.1f}s)")
 
         # 5. Pipeline-level evidence: merge dataset validation + training evidence
-        pipeline_evidence = EvidenceReport(
-            subject=f"Training pipeline: {model_name}"
-        )
+        pipeline_evidence = EvidenceReport(subject=f"Training pipeline: {model_name}")
         pipeline_evidence.merge(ds_validation_report, "dataset_validation")
         if results.evidence_report is not None:
             pipeline_evidence.merge(results.evidence_report, "training")
@@ -197,7 +203,9 @@ def _write_model_manifest(results, model_path: Path) -> Path:
         "training_config": {
             "epochs": results.config.epochs,
             "learning_rate": results.config.learning_rate,
-            "optimizer": getattr(results.config.optimizer, "__name__", str(results.config.optimizer)),
+            "optimizer": getattr(
+                results.config.optimizer, "__name__", str(results.config.optimizer)
+            ),
             "batch_size": results.config.batch_size,
             "task": type(results.config.task).__name__,
         },

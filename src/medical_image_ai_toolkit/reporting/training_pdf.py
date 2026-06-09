@@ -8,10 +8,13 @@ Pages
 3. Per-epoch metrics (dice, iou, precision, recall) — omitted when absent
 4. Partition / config summary
 """
+
 from __future__ import annotations
 
 import json
+
 import matplotlib
+
 matplotlib.use("Agg")
 
 from pathlib import Path
@@ -122,17 +125,33 @@ def generate_training_pdf(
 # Private plot helpers
 # ---------------------------------------------------------------------------
 
+
 def _plot_loss_curve(pdf, history: list[dict]) -> None:
     epochs = [h["epoch"] for h in history]
     train_loss = [h["loss"] for h in history]
     val_loss = [h["val_loss"] for h in history if "val_loss" in h]
 
     fig, ax = plt.subplots(figsize=(9, 5))
-    ax.plot(epochs, train_loss, marker="o", linewidth=2,
-            color="#2196F3", markersize=5, label="Train loss")
+    ax.plot(
+        epochs,
+        train_loss,
+        marker="o",
+        linewidth=2,
+        color="#2196F3",
+        markersize=5,
+        label="Train loss",
+    )
     if len(val_loss) == len(epochs):
-        ax.plot(epochs, val_loss, marker="s", linewidth=2, linestyle="--",
-                color="#FF9800", markersize=5, label="Val loss")
+        ax.plot(
+            epochs,
+            val_loss,
+            marker="s",
+            linewidth=2,
+            linestyle="--",
+            color="#FF9800",
+            markersize=5,
+            label="Val loss",
+        )
         ax.legend(fontsize=11)
     ax.set_xlabel("Epoch", fontsize=12)
     ax.set_ylabel("Loss", fontsize=12)
@@ -149,8 +168,15 @@ def _plot_epoch_metrics(pdf, history: list[dict], metric_keys: list[str]) -> Non
     for key in metric_keys:
         vals = [h.get(key) for h in history]
         if any(v is not None for v in vals):
-            ax.plot(epochs, vals, marker="o", linewidth=2, markersize=5,
-                    label=key, color=_METRIC_COLORS.get(key))
+            ax.plot(
+                epochs,
+                [v if v is not None else float("nan") for v in vals],
+                marker="o",
+                linewidth=2,
+                markersize=5,
+                label=key,
+                color=_METRIC_COLORS.get(key),
+            )
     ax.set_xlabel("Epoch", fontsize=12)
     ax.set_ylabel("Score", fontsize=12)
     ax.set_ylim(0, 1.05)

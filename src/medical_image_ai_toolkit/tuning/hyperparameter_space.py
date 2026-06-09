@@ -32,7 +32,10 @@ class HyperparameterSpace:
         if not self._params:
             return [{}]
         keys = list(self._params.keys())
-        return [dict(zip(keys, combo, strict=False)) for combo in itertools.product(*self._params.values())]
+        return [
+            dict(zip(keys, combo, strict=False))
+            for combo in itertools.product(*self._params.values())
+        ]
 
     def random_sample(self, n: int, seed: int | None = None) -> list[dict[str, Any]]:
         """Return up to *n* combinations drawn without replacement."""

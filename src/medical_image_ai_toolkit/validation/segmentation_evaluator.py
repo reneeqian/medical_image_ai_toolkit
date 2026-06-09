@@ -71,7 +71,7 @@ class SegmentationEvaluator(BaseEvaluator):
             where value > 0.5.
         """
         pred_bin = (pred > self.threshold).long().view(-1)
-        y_bin    = (target > 0.5).long().view(-1)
+        y_bin = (target > 0.5).long().view(-1)
 
         self._tp += int(((pred_bin == 1) & (y_bin == 1)).sum())
         self._fp += int(((pred_bin == 1) & (y_bin == 0)).sum())
@@ -84,11 +84,11 @@ class SegmentationEvaluator(BaseEvaluator):
         tp, fp, fn, tn = self._tp, self._fp, self._fn, self._tn
         total = tp + fp + fn + tn
 
-        precision = tp / (tp + fp)           if (tp + fp) > 0 else float("nan")
-        recall    = tp / (tp + fn)           if (tp + fn) > 0 else float("nan")
-        dice      = (2 * tp) / (2 * tp + fp + fn) if (2 * tp + fp + fn) > 0 else float("nan")
-        iou       = tp / (tp + fp + fn)      if (tp + fp + fn) > 0 else float("nan")
-        accuracy  = (tp + tn) / total        if total > 0 else float("nan")
+        precision = tp / (tp + fp) if (tp + fp) > 0 else float("nan")
+        recall = tp / (tp + fn) if (tp + fn) > 0 else float("nan")
+        dice = (2 * tp) / (2 * tp + fp + fn) if (2 * tp + fp + fn) > 0 else float("nan")
+        iou = tp / (tp + fp + fn) if (tp + fp + fn) > 0 else float("nan")
+        accuracy = (tp + tn) / total if total > 0 else float("nan")
 
         return {
             # raw counts

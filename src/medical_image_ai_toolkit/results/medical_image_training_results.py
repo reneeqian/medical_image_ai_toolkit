@@ -70,16 +70,13 @@ class MedicalImageTrainingResults:
         print(f"Model: {self.model.__class__.__name__}")
 
         if self.training_end_time is not None and self.training_start_time is not None:
-
             duration = self.training_end_time - self.training_start_time
             print(f"Training time: {duration}")
 
         else:
-
             print("Training still running")
 
         if self.metrics:
-
             print("\nMetrics")
 
             for k, v in self.metrics.items():
@@ -101,7 +98,7 @@ class MedicalImageTrainingResults:
             "metrics": self.metrics,
             "datasource": vars(self.datasource),
             "config": vars(self.config),
-            "history": self.history
+            "history": self.history,
         }
 
         with open(report_path, "w") as f:
@@ -154,7 +151,6 @@ class MedicalImageTrainingResults:
         self.model.eval()
 
         with torch.no_grad():
-
             preds = []
 
             for sample in data:

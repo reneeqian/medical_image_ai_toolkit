@@ -65,22 +65,22 @@ class TrainingConfig:
     """
 
     def __init__(
-            self,
-            epochs: int = 10,
-            batch_size: int = 2,
-            learning_rate: float = 1e-4,
-            device: str = "cpu",
-            num_workers: int = 0,
-            task: TrainingTaskDefinition | None = None,
-            split_strategy: Any | None = None,
-            optimizer: type[torch.optim.Optimizer] = torch.optim.Adam,
-            early_stop: bool = True,
-            loss_threshold: float = 0.01,
-            plateau_patience: int = 5,
-            plateau_min_delta: float = 1e-4,
-            val_evaluator: BaseEvaluator | None = None,
-            checkpoint_every: int = 0,
-        ):
+        self,
+        epochs: int = 10,
+        batch_size: int = 2,
+        learning_rate: float = 1e-4,
+        device: str = "cpu",
+        num_workers: int = 0,
+        task: TrainingTaskDefinition | None = None,
+        split_strategy: Any | None = None,
+        optimizer: type[torch.optim.Optimizer] = torch.optim.Adam,
+        early_stop: bool = True,
+        loss_threshold: float = 0.01,
+        plateau_patience: int = 5,
+        plateau_min_delta: float = 1e-4,
+        val_evaluator: BaseEvaluator | None = None,
+        checkpoint_every: int = 0,
+    ):
 
         self.epochs = epochs
         self.batch_size = batch_size

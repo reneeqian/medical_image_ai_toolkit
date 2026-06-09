@@ -9,10 +9,13 @@ Pages
 4. Per-patient dice score histogram
 5. Patient sample images (embedded from patient_samples.png if it exists)
 """
+
 from __future__ import annotations
 
 import json
+
 import matplotlib
+
 matplotlib.use("Agg")
 
 from pathlib import Path
@@ -97,6 +100,7 @@ def generate_model_testing_pdf(
 # Private helpers
 # ---------------------------------------------------------------------------
 
+
 def _embed_confusion_matrix(pdf, metrics: dict, run_dir: Path) -> None:
     tmp = run_dir / "_tmp_cm.png"
     try:
@@ -124,8 +128,15 @@ def _plot_metrics_bar(pdf, metrics: dict) -> None:
     ax.grid(axis="y", alpha=0.3)
     for bar, val in zip(bars, vals):
         if val is not None:
-            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.02,
-                    f"{val:.4f}", ha="center", va="bottom", fontsize=11, fontweight="bold")
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 0.02,
+                f"{val:.4f}",
+                ha="center",
+                va="bottom",
+                fontsize=11,
+                fontweight="bold",
+            )
     plt.tight_layout()
     pdf.savefig(fig, bbox_inches="tight")
     plt.close(fig)
@@ -137,10 +148,14 @@ def _plot_dice_histogram(pdf, per_patient: list[dict]) -> None:
         return
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.hist(dice_vals, bins=min(20, len(dice_vals)), color="#2196F3",
-            edgecolor="white", alpha=0.85)
-    ax.axvline(np.mean(dice_vals), color="#E91E63", linewidth=2, linestyle="--",
-               label=f"Mean = {np.mean(dice_vals):.4f}")
+    ax.hist(dice_vals, bins=min(20, len(dice_vals)), color="#2196F3", edgecolor="white", alpha=0.85)
+    ax.axvline(
+        np.mean(dice_vals),
+        color="#E91E63",
+        linewidth=2,
+        linestyle="--",
+        label=f"Mean = {np.mean(dice_vals):.4f}",
+    )
     ax.set_xlabel("Dice Score", fontsize=12)
     ax.set_ylabel("Patients", fontsize=12)
     ax.set_title("Per-Patient Dice Distribution", fontsize=14, fontweight="bold")

@@ -15,7 +15,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-CT_WL, CT_WW = 40, 400   # cardiac soft-tissue window (HU)
+CT_WL, CT_WW = 40, 400  # cardiac soft-tissue window (HU)
 
 
 def plot_training_curve(history: list[dict], path: Path) -> Path:
@@ -53,12 +53,19 @@ def plot_confusion_matrix(metrics: dict, path: Path) -> Path:
 
     for i in range(2):
         for j in range(2):
-            val   = int(matrix[i, j])
-            pct   = 100.0 * val / total
+            val = int(matrix[i, j])
+            pct = 100.0 * val / total
             color = "white" if matrix[i, j] > matrix.max() * 0.55 else "black"
-            ax.text(j, i, f"{cell_labels[i][j]}\n{val:,}\n({pct:.1f}%)",
-                    ha="center", va="center", fontsize=12,
-                    fontweight="bold", color=color)
+            ax.text(
+                j,
+                i,
+                f"{cell_labels[i][j]}\n{val:,}\n({pct:.1f}%)",
+                ha="center",
+                va="center",
+                fontsize=12,
+                fontweight="bold",
+                color=color,
+            )
 
     ax.set_xticks([0, 1])
     ax.set_yticks([0, 1])
@@ -67,14 +74,19 @@ def plot_confusion_matrix(metrics: dict, path: Path) -> Path:
     ax.set_title("Pixel-Level Confusion Matrix", fontsize=14, fontweight="bold", pad=12)
 
     dice = metrics.get("dice")
-    iou  = metrics.get("iou")
+    iou = metrics.get("iou")
     prec = metrics.get("precision")
-    rec  = metrics.get("recall")
+    rec = metrics.get("recall")
     if None not in (dice, iou, prec, rec):
-        fig.text(0.5, 0.01,
-                 f"Dice: {dice:.4f}   IoU: {iou:.4f}   Precision: {prec:.4f}   Recall: {rec:.4f}",
-                 ha="center", fontsize=10, style="italic")
-        plt.tight_layout(rect=[0, 0.04, 1, 1])
+        fig.text(
+            0.5,
+            0.01,
+            f"Dice: {dice:.4f}   IoU: {iou:.4f}   Precision: {prec:.4f}   Recall: {rec:.4f}",
+            ha="center",
+            fontsize=10,
+            style="italic",
+        )
+        plt.tight_layout(rect=(0, 0.04, 1, 1))
     else:
         plt.tight_layout()
 
@@ -105,27 +117,28 @@ def plot_patient_samples(sample_viz_data: list[dict], path: Path) -> Path | None
     vmax = CT_WL + CT_WW / 2
 
     for row, s in enumerate(sample_viz_data):
-        hu        = s["hu"]
-        gt_mask   = s["gt_mask"]
-        pred      = s["pred"]
-        pid       = s["patient_id"]
+        hu = s["hu"]
+        gt_mask = s["gt_mask"]
+        pred = s["pred"]
+        pid = s["patient_id"]
         slice_idx = s["slice_idx"]
 
         for ax, overlay, cmap, col_title in zip(
             axes[row],
-            [gt_mask,   pred],
+            [gt_mask, pred],
             ["Oranges", "hot"],
             ["GT Annotation", "Model Prediction"],
             strict=True,
         ):
-            ax.imshow(hu, cmap="gray", vmin=vmin, vmax=vmax,
-                      interpolation="bilinear")
+            ax.imshow(hu, cmap="gray", vmin=vmin, vmax=vmax, interpolation="bilinear")
             masked = np.ma.masked_where(overlay < 0.05, overlay)
-            ax.imshow(masked, cmap=cmap, alpha=0.55, vmin=0, vmax=1,
-                      interpolation="none")
+            ax.imshow(masked, cmap=cmap, alpha=0.55, vmin=0, vmax=1, interpolation="none")
             ax.set_title(
                 f"Patient {pid}  |  Slice {slice_idx}\n{col_title}",
-                color="white", fontsize=12, fontweight="bold", pad=6,
+                color="white",
+                fontsize=12,
+                fontweight="bold",
+                pad=6,
             )
             ax.axis("off")
 

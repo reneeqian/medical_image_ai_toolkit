@@ -4,7 +4,7 @@ import logging
 import random as _random
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import torch
 from regulatory_tools.evidence.evidence_report import EvidenceReport
@@ -186,14 +186,12 @@ class ModelTestingPipeline:
         # Select up to 3 random patients for visualization (seeded for reproducibility)
         n_viz = min(3, len(test_ids))
         viz_ids = set(_random.Random(42).sample(test_ids, n_viz))
-        _viz_best = {}   # pid -> (score, slice_idx, hu, gt_mask, pred_prob)
+        _viz_best: dict[str, Any] = {}  # pid -> (score, slice_idx, hu, gt_mask, pred_prob)
 
         logger.info("Running inference on test patients...")
 
         with torch.no_grad():
-
             for patient_id in test_ids:
-
                 patient_sample = self.datasource.get_patient(patient_id)
 
                 patient_loss = 0.0
@@ -205,7 +203,6 @@ class ModelTestingPipeline:
 
                 _slice_idx = 0
                 for sample in task.generate_training_samples(patient_sample):
-
                     x = sample["input"].to(device)
                     y = sample["target"]
 
@@ -239,9 +236,7 @@ class ModelTestingPipeline:
                             )
                     _slice_idx += 1
 
-                per_patient_loss = (
-                    patient_loss / patient_samples if patient_samples > 0 else None
-                )
+                per_patient_loss = patient_loss / patient_samples if patient_samples > 0 else None
 
                 patient_metrics = patient_evaluator.aggregate()
 
@@ -260,8 +255,7 @@ class ModelTestingPipeline:
                 loss_str = f"{per_patient_loss:.6f}" if per_patient_loss is not None else "N/A"
                 logger.info("  %s: loss=%s  samples=%d", patient_id, loss_str, patient_samples)
                 metrics_str = "  ".join(
-                    f"{k}={v:.4f}" for k, v in patient_metrics.items()
-                    if isinstance(v, float)
+                    f"{k}={v:.4f}" for k, v in patient_metrics.items() if isinstance(v, float)
                 )
                 evidence.info(
                     f"patient={patient_id}  loss={loss_str}  samples={patient_samples}"
@@ -286,13 +280,15 @@ class ModelTestingPipeline:
 
         # 6. Populate viz data
         for pid, (_, slice_idx, hu, gt_mask, pred_prob) in _viz_best.items():
-            results.sample_viz_data.append({
-                "patient_id": pid,
-                "slice_idx":  slice_idx,
-                "hu":         hu,
-                "gt_mask":    gt_mask,
-                "pred":       pred_prob,
-            })
+            results.sample_viz_data.append(
+                {
+                    "patient_id": pid,
+                    "slice_idx": slice_idx,
+                    "hu": hu,
+                    "gt_mask": gt_mask,
+                    "pred": pred_prob,
+                }
+            )
 
         # 7. Export artefacts
         report_path = results.generate_testing_report()
