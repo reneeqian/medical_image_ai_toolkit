@@ -7,7 +7,7 @@ import numpy as np
 @dataclass
 class VectorROI:
     slice_index: int
-    contour_px: np.ndarray          # shape (N, 2)
+    contour_px: np.ndarray  # shape (N, 2)
     label: str
     metadata: Optional[dict] = None
 

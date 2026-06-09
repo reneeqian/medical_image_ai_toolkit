@@ -111,21 +111,13 @@ class MedicalImageTrainer:
 
         self.model.to(device)
 
-        optimizer = self.config.optimizer(
-            self.model.parameters(),
-            lr=self.config.learning_rate
-        )
+        optimizer = self.config.optimizer(self.model.parameters(), lr=self.config.learning_rate)
 
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         run_dir = self.output_dir / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
 
-        results = MedicalImageTrainingResults(
-            self.model,
-            self.config,
-            self.datasource,
-            run_dir
-        )
+        results = MedicalImageTrainingResults(self.model, self.config, self.datasource, run_dir)
         results.training_start_time = datetime.now()
 
         early_stop = self.config.early_stop
@@ -139,7 +131,8 @@ class MedicalImageTrainer:
             logger.info(
                 "Early stopping ON  |  loss_threshold=%s  |  plateau_patience=%s"
                 "  |  plateau_min_delta=%s",
-                self.config.loss_threshold, self.config.plateau_patience,
+                self.config.loss_threshold,
+                self.config.plateau_patience,
                 self.config.plateau_min_delta,
             )
 
@@ -164,7 +157,6 @@ class MedicalImageTrainer:
         task = self.config.task
 
         for epoch in range(start_epoch, self.config.epochs):
-
             logger.info("Epoch %d/%d", epoch + 1, self.config.epochs)
 
             epoch_loss = self._run_train_pass(train_ids, task, optimizer, device)
@@ -180,7 +172,9 @@ class MedicalImageTrainer:
             _epoch_start = time.time()
             self._log_epoch(epoch, epoch_loss, val_metrics, elapsed, evidence)
 
-            self._maybe_save_checkpoint(epoch, optimizer, epoch_losses, epochs_without_improvement, results.history, run_dir)
+            self._maybe_save_checkpoint(
+                epoch, optimizer, epoch_losses, epochs_without_improvement, results.history, run_dir
+            )
 
             if early_stop:
                 stop_reason, epochs_without_improvement = self._check_early_stopping(
@@ -218,7 +212,6 @@ class MedicalImageTrainer:
         print(f"Total patients: {total}")
 
         if self.datasource.has_partitions():
-
             train_n = len(self.datasource.get_train_ids())
             val_n = len(self.datasource.get_val_ids())
             test_n = len(self.datasource.get_test_ids())
@@ -228,7 +221,6 @@ class MedicalImageTrainer:
             print(f"Test patients:  {test_n}")
 
         else:
-
             print("Partitions: NOT CREATED")
 
         # ------------------------------
@@ -249,11 +241,8 @@ class MedicalImageTrainer:
         print(self.model.__class__.__name__)
 
         try:
-
             total_params = sum(p.numel() for p in self.model.parameters())
-            trainable_params = sum(
-                p.numel() for p in self.model.parameters() if p.requires_grad
-            )
+            trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
 
             print(f"Total parameters: {total_params}")
             print(f"Trainable parameters: {trainable_params}")
@@ -295,9 +284,7 @@ class MedicalImageTrainer:
         else:
             logger.info("  train loss=%.6f", epoch_loss)
             print(
-                f"  epoch {epoch + 1}/{self.config.epochs}"
-                f"  loss={epoch_loss:.6f}"
-                f"  ({elapsed:.1f}s)"
+                f"  epoch {epoch + 1}/{self.config.epochs}  loss={epoch_loss:.6f}  ({elapsed:.1f}s)"
             )
             evidence.info(f"epoch={epoch + 1}  loss={epoch_loss:.6f}", "TRN-004")
 
@@ -445,7 +432,9 @@ class MedicalImageTrainer:
     ) -> None:
         every = self.config.checkpoint_every
         if every > 0 and (epoch + 1) % every == 0:
-            self._save_checkpoint(epoch, optimizer, epoch_losses, epochs_without_improvement, history, run_dir)
+            self._save_checkpoint(
+                epoch, optimizer, epoch_losses, epochs_without_improvement, history, run_dir
+            )
 
     def _save_checkpoint(
         self,

@@ -12,7 +12,6 @@ from medical_image_ai_toolkit.dataobjects.patient_sample_contract import (
 
 
 class DatasetValidator:
-
     def __init__(self, datasource: MedicalImageDataSource, req_provider=None):
         self.datasource = datasource
         self.req_provider = req_provider
@@ -20,20 +19,17 @@ class DatasetValidator:
     def run(self):
 
         report = EvidenceReport(
-            subject="Dataset Validation",
-            requirement_provider=self.req_provider
+            subject="Dataset Validation", requirement_provider=self.req_provider
         )
         self.datasource.ingestor.report = report
 
         patient_ids = self.datasource.get_patient_ids()
 
         report.info(
-            message=f"Total patients: {len(patient_ids)}",
-            requirement_tag="dataset_validation"
+            message=f"Total patients: {len(patient_ids)}", requirement_tag="dataset_validation"
         )
 
         for pid in patient_ids:
-
             try:
                 sample = self.datasource.get_patient(pid)
 
@@ -48,9 +44,8 @@ class DatasetValidator:
                 report.error(
                     message="Failed to load patient",
                     requirement_tag="patient_load_failure",
-                    context=f"patient={pid} | error={str(e)}"
+                    context=f"patient={pid} | error={str(e)}",
                 )
-
 
         return report
 
@@ -165,7 +160,7 @@ def summarize_invalid_annotation_slices(report):
             raw_list = sorted(data["raw_indices"])
             ns_str = str(data["num_slices"]) if data["num_slices"] is not None else "?"
             if len(raw_list) > 10:
-                display = str(raw_list[:10])[:-1] + f", ... +{len(raw_list)-10} more]"
+                display = str(raw_list[:10])[:-1] + f", ... +{len(raw_list) - 10} more]"
             else:
                 display = str(raw_list)
             print(f"{fname:<20} {ns_str:>10}  {display}")

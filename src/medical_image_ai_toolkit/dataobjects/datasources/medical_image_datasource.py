@@ -75,7 +75,6 @@ class MedicalImageDataSource:
 
         return train_ids, val_ids, test_ids
 
-
     def partition_summary(self):
         print("\nDataset Summary")
         print("-----------------")
@@ -93,44 +92,34 @@ class MedicalImageDataSource:
 
         print("\nPartitions")
         print("-----------------")
-        print(f"Train: {train_n} ({train_n/total:.2%})")
-        print(f"Val:   {val_n} ({val_n/total:.2%})")
-        print(f"Test:  {test_n} ({test_n/total:.2%})")
+        print(f"Train: {train_n} ({train_n / total:.2%})")
+        print(f"Val:   {val_n} ({val_n / total:.2%})")
+        print(f"Test:  {test_n} ({test_n / total:.2%})")
 
     def get_train_ids(self):
 
         if self.train_ids is None:
-            raise RuntimeError(
-                "Partitions have not been created. Call create_partitions() first."
-            )
+            raise RuntimeError("Partitions have not been created. Call create_partitions() first.")
 
         return self.train_ids
 
     def get_val_ids(self):
 
         if self.val_ids is None:
-            raise RuntimeError(
-                "Partitions have not been created. Call create_partitions() first."
-            )
+            raise RuntimeError("Partitions have not been created. Call create_partitions() first.")
 
         return self.val_ids
 
     def get_test_ids(self):
 
         if self.test_ids is None:
-            raise RuntimeError(
-                "Partitions have not been created. Call create_partitions() first."
-            )
+            raise RuntimeError("Partitions have not been created. Call create_partitions() first.")
 
         return self.test_ids
 
     def has_partitions(self):
 
-        return (
-            self.train_ids is not None
-            and self.val_ids is not None
-            and self.test_ids is not None
-        )
+        return self.train_ids is not None and self.val_ids is not None and self.test_ids is not None
 
     def save_partitions(self, run_dir: Path) -> Path:
         """
@@ -167,8 +156,8 @@ class MedicalImageDataSource:
             json.dump(
                 {
                     "train_ids": self.train_ids,
-                    "val_ids":   self.val_ids,
-                    "test_ids":  self.test_ids,
+                    "val_ids": self.val_ids,
+                    "test_ids": self.test_ids,
                 },
                 f,
                 indent=2,
@@ -178,7 +167,9 @@ class MedicalImageDataSource:
         return path
 
     @classmethod
-    def load_partitions(cls, datasource: "MedicalImageDataSource", path: Path) -> "MedicalImageDataSource":
+    def load_partitions(
+        cls, datasource: "MedicalImageDataSource", path: Path
+    ) -> "MedicalImageDataSource":
         """
         Restore partition assignments from a ``partitions.json`` file
         onto an existing datasource instance.
@@ -227,8 +218,8 @@ class MedicalImageDataSource:
                     )
 
         datasource.train_ids = payload["train_ids"]
-        datasource.val_ids   = payload["val_ids"]
-        datasource.test_ids  = payload["test_ids"]
+        datasource.val_ids = payload["val_ids"]
+        datasource.test_ids = payload["test_ids"]
 
         print(f"Partitions loaded from: {path}")
         print(
@@ -263,10 +254,8 @@ class MedicalImageDataSource:
         if sample.annotations is not None:
             vector_rois = getattr(sample.annotations, "vector_rois", None)
 
-
         # Determine slice list
         if annotated_only:
-
             if not vector_rois:
                 print("No annotations found for this patient.")
                 return
@@ -274,19 +263,14 @@ class MedicalImageDataSource:
             slice_indices = sorted(vector_rois.keys())
 
         elif slice_index is not None:
-
             slice_indices = [slice_index]
 
         elif slice_range is not None:
-
             start, end = slice_range
             slice_indices = list(range(start, end))
 
         else:
-
-            raise ValueError(
-                "Provide slice_index, slice_range, or annotated_only=True"
-            )
+            raise ValueError("Provide slice_index, slice_range, or annotated_only=True")
 
         # Validate indices
         for idx in slice_indices:
@@ -319,29 +303,20 @@ class MedicalImageDataSource:
             ax.axis("off")
 
             if show_annotations and sample.annotations is not None:
-
                 vector_rois = getattr(sample.annotations, "vector_rois", None)
 
                 if vector_rois and slice_idx in vector_rois:
-
                     for roi in vector_rois[slice_idx]:
-
                         pts = roi.contour_px
 
                         if pts is None or len(pts) < 3:
                             continue
 
                         # draw contour
-                        ax.plot(
-                            pts[:, 0],
-                            pts[:, 1],
-                            linewidth=2,
-                            color="red"
-                        )
+                        ax.plot(pts[:, 0], pts[:, 1], linewidth=2, color="red")
 
                         # ---- ADD BOUNDING BOX ----
                         if show_bboxes:
-
                             x_min = np.min(pts[:, 0])
                             x_max = np.max(pts[:, 0])
                             y_min = np.min(pts[:, 1])
@@ -356,7 +331,7 @@ class MedicalImageDataSource:
                                 height,
                                 linewidth=2,
                                 edgecolor="yellow",
-                                facecolor="none"
+                                facecolor="none",
                             )
 
                             ax.add_patch(rect)

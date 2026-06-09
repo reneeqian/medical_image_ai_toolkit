@@ -12,8 +12,8 @@ class PatientSample:
     Canonical, lossless representation of a single patient study.
     """
 
-    image_volume: np.ndarray              # (Z, Y, X), HU
-    spacing: tuple[float, float, float]   # (dz, dy, dx)
+    image_volume: np.ndarray  # (Z, Y, X), HU
+    spacing: tuple[float, float, float]  # (dz, dy, dx)
     annotations: AnnotationBundle
 
     patient_id: str

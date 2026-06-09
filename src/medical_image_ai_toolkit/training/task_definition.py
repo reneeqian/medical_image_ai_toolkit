@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 
 
 class TrainingTaskDefinition(ABC):
-
     @abstractmethod
     def generate_training_samples(
         self, patient_sample: PatientSample
@@ -28,9 +27,7 @@ class TrainingTaskDefinition(ABC):
         pass
 
     @abstractmethod
-    def compute_loss(
-        self, prediction: torch.Tensor, target: torch.Tensor
-    ) -> torch.Tensor:
+    def compute_loss(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
         Task-specific loss computation.
         """

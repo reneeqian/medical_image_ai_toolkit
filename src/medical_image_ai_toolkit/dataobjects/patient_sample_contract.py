@@ -26,6 +26,7 @@ def enforce_patient_sample_contract(
 
     return report
 
+
 def _check_volume(sample: PatientSample, report: EvidenceReport) -> None:
     vol = sample.image_volume
 
@@ -64,7 +65,8 @@ def _check_spacing(sample: PatientSample, report: EvidenceReport) -> None:
     if spacing is None:
         report.error(
             message="spacing must not be None",
-            requirement_tag="dataset_validation",)
+            requirement_tag="dataset_validation",
+        )
         return
 
     if len(spacing) != 3:
@@ -88,6 +90,7 @@ def _check_spacing(sample: PatientSample, report: EvidenceReport) -> None:
             context=str(spacing),
         )
 
+
 def _check_patient_id(sample: PatientSample, report: EvidenceReport) -> None:
     if not sample.patient_id:
         report.error(
@@ -100,6 +103,7 @@ def _check_patient_id(sample: PatientSample, report: EvidenceReport) -> None:
             requirement_tag="dataset_validation",
             context=sample.patient_id,
         )
+
 
 def _check_annotations(
     sample: PatientSample,
