@@ -1,9 +1,10 @@
 name: Sync main into dev
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Medical Image AI Toolkit Forge Health"]
+    types: [completed]
+    branches: [main]
 
 jobs:
   sync:
