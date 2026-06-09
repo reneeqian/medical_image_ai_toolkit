@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+
 import pytest
 import torch
 from torch.utils.data import Dataset
@@ -13,7 +14,8 @@ def project_root() -> Path:
     """
     Returns the root of the Coronary_prj project.
     """
-    return Path(__file__).resolve().parents[1] 
+    return Path(__file__).resolve().parents[1]
+
 
 # ---------------------------------------------------------------------
 # Evidence Output Directory
@@ -25,6 +27,7 @@ def evidence_output_dir():
     run_dir = root / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     return run_dir
+
 
 # ---------------------------------------------------------------------
 # Tensor Batch Helpers

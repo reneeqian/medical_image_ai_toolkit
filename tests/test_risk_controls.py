@@ -11,21 +11,20 @@ from pathlib import Path
 import numpy as np
 import pytest
 import torch
+from regulatory_tools.evidence.evidence_report import EvidenceReport
 
 from medical_image_ai_toolkit.dataobjects.annotation_bundle import AnnotationBundle
-from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
-    MedicalImageDataSource,
-)
 from medical_image_ai_toolkit.dataobjects.datasources.deterministic_split import (
     DeterministicHoldoutSplit,
+)
+from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
+    MedicalImageDataSource,
 )
 from medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
 from medical_image_ai_toolkit.pipeline.training_pipeline import TrainingPipeline
 from medical_image_ai_toolkit.training.medical_image_trainer import MedicalImageTrainer
 from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
 from medical_image_ai_toolkit.training.training_config import TrainingConfig
-from regulatory_tools.evidence.evidence_report import EvidenceReport
-
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -107,9 +106,7 @@ def test_nan_loss_halts_training_with_runtime_error(tmp_path, evidence_output_di
         if "NaN" in str(e):
             report.info(f"RuntimeError raised with expected NaN message: {e!r}", "RSK-001")
         else:
-            report.error(
-                f"RuntimeError raised but message did not mention NaN: {e!r}", "RSK-001"
-            )
+            report.error(f"RuntimeError raised but message did not mention NaN: {e!r}", "RSK-001")
 
     report.auto_save("rsk001_nan_loss_detection", evidence_output_dir)
     assert not report.has_errors, report.summary()
@@ -133,7 +130,9 @@ def test_model_manifest_contains_required_fields(tmp_path, evidence_output_dir):
     pipeline_out = TrainingPipeline(
         datasource=ds,
         model=_TinyNet(),
-        config=TrainingConfig(epochs=1, batch_size=2, task=_SimpleTask(), split_strategy=_FixedSplit()),
+        config=TrainingConfig(
+            epochs=1, batch_size=2, task=_SimpleTask(), split_strategy=_FixedSplit()
+        ),
         output_dir=tmp_path / "runs",
     ).run()
     results = pipeline_out["results"]
@@ -148,9 +147,7 @@ def test_model_manifest_contains_required_fields(tmp_path, evidence_output_dir):
         if missing:
             report.error(f"Manifest missing required fields: {missing}", "RSK-002")
         else:
-            report.info(
-                f"Manifest contains all required fields: {required}", "RSK-002"
-            )
+            report.info(f"Manifest contains all required fields: {required}", "RSK-002")
 
     report.auto_save("rsk002_model_manifest_integrity", evidence_output_dir)
     assert not report.has_errors, report.summary()

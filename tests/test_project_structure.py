@@ -1,7 +1,7 @@
-import pytest
-import yaml
 from pathlib import Path
 
+import pytest
+import yaml
 from regulatory_tools.evidence.evidence_report import EvidenceReport
 from regulatory_tools.quality.soup_checker import check_soup_inventory
 
@@ -57,10 +57,7 @@ def test_project_documentation_structure(
 
         if data:
             # ---- Metadata project title ----
-            project_name = (
-                data.get("metadata", {})
-                .get("project")
-            )
+            project_name = data.get("metadata", {}).get("project")
 
             if not project_name:
                 report.error(
@@ -117,10 +114,7 @@ def test_project_documentation_structure(
     else:
         content = readme_path.read_text(encoding="utf-8")
 
-        has_heading = any(
-            line.strip().startswith("#")
-            for line in content.splitlines()
-        )
+        has_heading = any(line.strip().startswith("#") for line in content.splitlines())
 
         if not has_heading:
             report.error(
@@ -209,8 +203,7 @@ def test_readme_describes_training_workflow(
         keywords = ("train", "trainingpipeline", "medicalimagetrainer")
         if not any(kw in content for kw in keywords):
             report.error(
-                "README.md does not mention training workflow "
-                f"(checked: {keywords})",
+                f"README.md does not mention training workflow (checked: {keywords})",
                 "DOC-003",
             )
         else:

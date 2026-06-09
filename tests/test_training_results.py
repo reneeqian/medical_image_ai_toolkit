@@ -1,21 +1,26 @@
-import torch
-import pytest
 from pathlib import Path
+
 import numpy as np
-
+import pytest
+import torch
 from regulatory_tools.evidence.evidence_report import EvidenceReport
-from medical_image_ai_toolkit.results.medical_image_training_results import MedicalImageTrainingResults
-from medical_image_ai_toolkit.training.medical_image_trainer import MedicalImageTrainer
-from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import MedicalImageDataSource
-from medical_image_ai_toolkit.training.training_config import TrainingConfig
-from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
-from medical_image_ai_toolkit.dataobjects.annotation_bundle import AnnotationBundle, VectorROI
-from medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
 
+from medical_image_ai_toolkit.dataobjects.annotation_bundle import AnnotationBundle, VectorROI
+from medical_image_ai_toolkit.dataobjects.datasources.medical_image_datasource import (
+    MedicalImageDataSource,
+)
+from medical_image_ai_toolkit.dataobjects.patient_sample import PatientSample
+from medical_image_ai_toolkit.results.medical_image_training_results import (
+    MedicalImageTrainingResults,
+)
+from medical_image_ai_toolkit.training.medical_image_trainer import MedicalImageTrainer
+from medical_image_ai_toolkit.training.task_definition import TrainingTaskDefinition
+from medical_image_ai_toolkit.training.training_config import TrainingConfig
 
 # ---------------------------------------------------------
 # Synthetic Dataset Ingestor
 # ---------------------------------------------------------
+
 
 class SyntheticIngestor:
     """
@@ -39,11 +44,7 @@ class SyntheticIngestor:
         rng = np.random.default_rng(abs(hash(patient_id)) % (2**32))
 
         # synthetic CT volume
-        volume = rng.normal(
-            loc=0,
-            scale=300,
-            size=(8, 64, 64)
-        ).astype(np.float32)
+        volume = rng.normal(loc=0, scale=300, size=(8, 64, 64)).astype(np.float32)
 
         # introduce NaNs if requested
         if self.nan_patient and patient_id == "P0":
@@ -52,12 +53,7 @@ class SyntheticIngestor:
         spacing = (1.5, 0.7, 0.7)
 
         # create simple ROI annotation on slice 4
-        contour = np.array([
-            [20, 20],
-            [40, 20],
-            [40, 40],
-            [20, 40]
-        ], dtype=np.float32)
+        contour = np.array([[20, 20], [40, 20], [40, 40], [20, 40]], dtype=np.float32)
 
         roi = VectorROI(
             slice_index=4,
@@ -78,6 +74,7 @@ class SyntheticIngestor:
             patient_id=patient_id,
             metadata={"source": "synthetic_test"},
         )
+
     def get_sample(self, patient_id):
 
         sample = self.load_patient_sample(patient_id)
@@ -86,7 +83,7 @@ class SyntheticIngestor:
 
         z = volume.shape[0] // 2
 
-        img = volume[z][16:48,16:48]
+        img = volume[z][16:48, 16:48]
 
         x = img.astype(np.float32)[None, None, :, :]  # N,C,H,W
 
@@ -96,35 +93,34 @@ class SyntheticIngestor:
 
         return x, y
 
+
 # ---------------------------------------------------------
 # Dummy Task Definition
 # ---------------------------------------------------------
 
-class DummyTask(TrainingTaskDefinition):
 
+class DummyTask(TrainingTaskDefinition):
     def generate_training_samples(self, patient_sample):
         for _ in range(2):
-            yield {
-                "input": torch.zeros((1, 1, 32, 32)),
-                "target": torch.ones((1, 1, 32, 32))
-            }
+            yield {"input": torch.zeros((1, 1, 32, 32)), "target": torch.ones((1, 1, 32, 32))}
 
     def compute_loss(self, prediction, target):
         return torch.mean((prediction - target) ** 2)
-    
+
+
 # ---------------------------------------------------------
 # Deterministic Partition Strategy
 # ---------------------------------------------------------
 
-class DeterministicSplit:
 
+class DeterministicSplit:
     def split(self, ids):
 
         n = len(ids)
 
         train = ids[: int(n * 0.6)]
-        val = ids[int(n * 0.6): int(n * 0.8)]
-        test = ids[int(n * 0.8):]
+        val = ids[int(n * 0.6) : int(n * 0.8)]
+        test = ids[int(n * 0.8) :]
 
         return train, val, test
 
@@ -133,8 +129,8 @@ class DeterministicSplit:
 # Minimal Model
 # ---------------------------------------------------------
 
-class TinyConvNet(torch.nn.Module):
 
+class TinyConvNet(torch.nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -147,14 +143,18 @@ class TinyConvNet(torch.nn.Module):
 
     def forward(self, x):
         return self.net(x)
-    
+
+
 # ---------------------------------------------------------
 # Tests
 # ---------------------------------------------------------
 
+
 @pytest.mark.requirement("MOD-003")
 def test_training_results_object_construction(tmp_path, evidence_output_dir):
-    report = EvidenceReport(subject="MOD-003: MedicalImageTrainingResults constructs with model, config, datasource, and output_dir")
+    report = EvidenceReport(
+        subject="MOD-003: MedicalImageTrainingResults constructs with model, config, datasource, and output_dir"
+    )
 
     class DummyConfig:
         epochs = 2
@@ -168,14 +168,19 @@ def test_training_results_object_construction(tmp_path, evidence_output_dir):
     if results.model is not model:
         report.error("results.model is not the model passed at construction", "MOD-003")
 
-    report.info(f"MedicalImageTrainingResults constructed; results.model is the expected model instance", "MOD-003")
+    report.info(
+        "MedicalImageTrainingResults constructed; results.model is the expected model instance",
+        "MOD-003",
+    )
     report.auto_save("MOD003_training_results_object_construction", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
 @pytest.mark.requirement("DOC-004")
 def test_training_results_generates_report_file(tmp_path, evidence_output_dir):
-    report = EvidenceReport(subject="DOC-004: generate_training_report() creates a report file on disk")
+    report = EvidenceReport(
+        subject="DOC-004: generate_training_report() creates a report file on disk"
+    )
 
     class DummyConfig:
         epochs = 2
@@ -183,7 +188,9 @@ def test_training_results_generates_report_file(tmp_path, evidence_output_dir):
     class DummyDatasource:
         pass
 
-    results = MedicalImageTrainingResults(torch.nn.Linear(4, 2), DummyConfig(), DummyDatasource(), tmp_path)
+    results = MedicalImageTrainingResults(
+        torch.nn.Linear(4, 2), DummyConfig(), DummyDatasource(), tmp_path
+    )
     results.metrics = {"loss": 0.1}
     results.history.append({"epoch": 1, "loss": 0.1})
     report_path = results.generate_training_report()
@@ -198,7 +205,9 @@ def test_training_results_generates_report_file(tmp_path, evidence_output_dir):
 
 @pytest.mark.requirement("MOD-005")
 def test_training_results_exports_model_file(tmp_path, evidence_output_dir):
-    report = EvidenceReport(subject="MOD-005: export_model() writes model weights to the specified path")
+    report = EvidenceReport(
+        subject="MOD-005: export_model() writes model weights to the specified path"
+    )
 
     class DummyConfig:
         epochs = 2
@@ -206,7 +215,9 @@ def test_training_results_exports_model_file(tmp_path, evidence_output_dir):
     class DummyDatasource:
         pass
 
-    results = MedicalImageTrainingResults(torch.nn.Linear(4, 2), DummyConfig(), DummyDatasource(), tmp_path)
+    results = MedicalImageTrainingResults(
+        torch.nn.Linear(4, 2), DummyConfig(), DummyDatasource(), tmp_path
+    )
     model_path = tmp_path / "model.pt"
     results.export_model(model_path)
 
@@ -220,7 +231,9 @@ def test_training_results_exports_model_file(tmp_path, evidence_output_dir):
 
 @pytest.mark.requirement("VER-002")
 def test_training_results_artifact_generation(tmp_path, evidence_output_dir):
-    report = EvidenceReport(subject="VER-002: generate_training_report() and export_model() both produce artifacts on disk")
+    report = EvidenceReport(
+        subject="VER-002: generate_training_report() and export_model() both produce artifacts on disk"
+    )
 
     class DummyConfig:
         epochs = 2
@@ -228,7 +241,9 @@ def test_training_results_artifact_generation(tmp_path, evidence_output_dir):
     class DummyDatasource:
         pass
 
-    results = MedicalImageTrainingResults(torch.nn.Linear(4, 2), DummyConfig(), DummyDatasource(), tmp_path)
+    results = MedicalImageTrainingResults(
+        torch.nn.Linear(4, 2), DummyConfig(), DummyDatasource(), tmp_path
+    )
     results.metrics = {"loss": 0.1}
     results.history.append({"epoch": 1, "loss": 0.1})
     report_path = results.generate_training_report()
@@ -243,7 +258,7 @@ def test_training_results_artifact_generation(tmp_path, evidence_output_dir):
     report.info(f"Both artifacts created: report={report_path}, model={model_path}", "VER-002")
     report.auto_save("VER002_training_results_artifact_generation", evidence_output_dir)
     assert not report.has_errors, report.summary()
-    
+
 
 @pytest.mark.requirement("MOD-006")
 def test_inference_output_count_matches_input(tmp_path, evidence_output_dir):
@@ -270,7 +285,9 @@ def test_inference_output_count_matches_input(tmp_path, evidence_output_dir):
 
 @pytest.mark.requirement("VER-007")
 def test_inference_determinism(tmp_path, evidence_output_dir):
-    report = EvidenceReport(subject="VER-007: two run_inference() calls on identical data produce bit-identical outputs")
+    report = EvidenceReport(
+        subject="VER-007: two run_inference() calls on identical data produce bit-identical outputs"
+    )
 
     class DummyConfig:
         pass
@@ -288,7 +305,9 @@ def test_inference_determinism(tmp_path, evidence_output_dir):
         if not torch.allclose(a, b):
             report.error("run_inference produced different outputs on identical input", "VER-007")
 
-    report.info("Two run_inference() calls on identical data produced bit-identical outputs", "VER-007")
+    report.info(
+        "Two run_inference() calls on identical data produced bit-identical outputs", "VER-007"
+    )
     report.auto_save("VER007_inference_determinism", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -296,82 +315,71 @@ def test_inference_determinism(tmp_path, evidence_output_dir):
 @pytest.mark.requirement("MOD-006")
 def test_results_inference(tmp_path, evidence_output_dir):
 
-    report = EvidenceReport(
-        subject="Training results inference"
-    )
+    report = EvidenceReport(subject="Training results inference")
 
-    model = torch.nn.Linear(4,2)
+    model = torch.nn.Linear(4, 2)
 
-    class Config: pass
-    class DS: pass
+    class Config:
+        pass
 
-    results = MedicalImageTrainingResults(
-        model,
-        Config(),
-        DS(),
-        tmp_path
-    )
+    class DS:
+        pass
 
-    x = torch.randn(1,4)
+    results = MedicalImageTrainingResults(model, Config(), DS(), tmp_path)
+
+    x = torch.randn(1, 4)
 
     y = results.model(x)
 
-    if y.shape != (1,2):
+    if y.shape != (1, 2):
         report.error("Model inference failed", "MOD-006")
 
     report.info(f"results.model(x) returned shape={y.shape} as expected", "MOD-006")
-    report.auto_save(
-        "MOD006_results_inference",
-        evidence_output_dir
-    )
+    report.auto_save("MOD006_results_inference", evidence_output_dir)
 
     assert not report.has_errors, report.summary()
 
+
 @pytest.mark.requirement("DOC-004")
 def test_summary_training_running(tmp_path, evidence_output_dir):
-    
+
     report = EvidenceReport(subject="Summary during training")
 
-    model = torch.nn.Linear(4,2)
+    model = torch.nn.Linear(4, 2)
 
-    class Config: pass
-    class DS: pass
+    class Config:
+        pass
 
-    results = MedicalImageTrainingResults(
-        model,
-        Config(),
-        DS(),
-        tmp_path
-    )
+    class DS:
+        pass
+
+    results = MedicalImageTrainingResults(model, Config(), DS(), tmp_path)
 
     # no training_end_time set
     results.summary()
 
     report.info("summary() executed without error when training_end_time is not yet set", "DOC-004")
-    report.auto_save(
-        "DOC004_summary_during_training",
-        evidence_output_dir
-    )
+    report.auto_save("DOC004_summary_during_training", evidence_output_dir)
     assert not report.has_errors, report.summary()
+
 
 @pytest.mark.requirement("DOC-004")
 def test_mark_training_complete_summary(tmp_path, evidence_output_dir):
-    
+
     report = EvidenceReport(subject="Mark training complete summary")
 
-    model = torch.nn.Linear(4,2)
+    model = torch.nn.Linear(4, 2)
 
-    class Config: pass
-    class DS: pass
+    class Config:
+        pass
 
-    results = MedicalImageTrainingResults(
-        model,
-        Config(),
-        DS(),
-        tmp_path
-    )
+    class DS:
+        pass
+
+    results = MedicalImageTrainingResults(model, Config(), DS(), tmp_path)
 
     from datetime import datetime
+
     results.training_start_time = datetime.now()
 
     results.mark_training_complete()
@@ -380,44 +388,44 @@ def test_mark_training_complete_summary(tmp_path, evidence_output_dir):
 
     assert hasattr(results, "training_end_time")
 
-    report.info("mark_training_complete() set training_end_time; summary() executed after completion", "DOC-004")
-    report.auto_save(
-        "DOC004_mark_training_complete_summary",
-        evidence_output_dir
+    report.info(
+        "mark_training_complete() set training_end_time; summary() executed after completion",
+        "DOC-004",
     )
+    report.auto_save("DOC004_mark_training_complete_summary", evidence_output_dir)
     assert not report.has_errors, report.summary()
+
 
 @pytest.mark.requirement("MOD-005")
 def test_export_model_failure(tmp_path, evidence_output_dir):
-    
+
     report = EvidenceReport(subject="Model export failure handling")
 
     class BadModel:
         def state_dict(self):
             raise RuntimeError("bad model")
 
-    class Config: pass
-    class DS: pass
+    class Config:
+        pass
 
-    results = MedicalImageTrainingResults(
-        BadModel(),
-        Config(),
-        DS(),
-        tmp_path
-    )
+    class DS:
+        pass
+
+    results = MedicalImageTrainingResults(BadModel(), Config(), DS(), tmp_path)
 
     results.export_model(tmp_path / "model.pt")
 
-    report.info("export_model() with a failing state_dict() did not raise — failure handled gracefully", "MOD-005")
-    report.auto_save(
-        "MOD005_model_export_failure",
-        evidence_output_dir
+    report.info(
+        "export_model() with a failing state_dict() did not raise — failure handled gracefully",
+        "MOD-005",
     )
+    report.auto_save("MOD005_model_export_failure", evidence_output_dir)
     assert not report.has_errors, report.summary()
+
 
 @pytest.mark.requirement("SYS-004")
 def test_results_artifact_registration(tmp_path, evidence_output_dir):
-    
+
     report = EvidenceReport(subject="Results artifact registration")
 
     ds = MedicalImageDataSource(tmp_path, SyntheticIngestor())
@@ -425,10 +433,7 @@ def test_results_artifact_registration(tmp_path, evidence_output_dir):
 
     model = TinyConvNet()
 
-    config = TrainingConfig(
-        epochs=1,
-        task=DummyTask()
-    )
+    config = TrainingConfig(epochs=1, task=DummyTask())
 
     trainer = MedicalImageTrainer(ds, model, config)
 
@@ -437,10 +442,7 @@ def test_results_artifact_registration(tmp_path, evidence_output_dir):
     assert "metrics" in results.artifacts
 
     report.info("Training results contain 'metrics' artifact key after trainer.train()", "SYS-004")
-    report.auto_save(
-        "SYS004_results_artifact_registration",
-        evidence_output_dir
-    )
+    report.auto_save("SYS004_results_artifact_registration", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
 
@@ -467,7 +469,10 @@ def test_successive_runs_produce_distinct_artifacts(tmp_path, evidence_output_di
     if not results2.run_dir.exists():
         report.error(f"Run 2 directory missing: {results2.run_dir}", "MOD-002")
 
-    report.info(f"Two successive training runs wrote to distinct dirs: {results1.run_dir.name} vs {results2.run_dir.name}", "MOD-002")
+    report.info(
+        f"Two successive training runs wrote to distinct dirs: {results1.run_dir.name} vs {results2.run_dir.name}",
+        "MOD-002",
+    )
     report.auto_save("MOD002_successive_runs_distinct_dirs", evidence_output_dir)
     assert not report.has_errors, report.summary()
 
@@ -480,8 +485,11 @@ def test_exported_model_loads_and_produces_same_output(tmp_path, evidence_output
     model = TinyConvNet()
     model_path = tmp_path / "model.pt"
 
-    class Config: pass
-    class DS: pass
+    class Config:
+        pass
+
+    class DS:
+        pass
 
     results = MedicalImageTrainingResults(model, Config(), DS(), tmp_path)
     results.export_model(model_path)
@@ -505,7 +513,10 @@ def test_exported_model_loads_and_produces_same_output(tmp_path, evidence_output
                 "MOD-004",
             )
         else:
-            report.info("Reloaded model produced bit-identical output to the original exported model", "MOD-004")
+            report.info(
+                "Reloaded model produced bit-identical output to the original exported model",
+                "MOD-004",
+            )
 
     report.auto_save("MOD004_exported_model_loads_same_output", evidence_output_dir)
     assert not report.has_errors, report.summary()
@@ -520,10 +531,7 @@ def test_training_run_records_lifecycle_timestamps(tmp_path, evidence_output_dir
     ds.create_partitions(DeterministicSplit())
 
     model = TinyConvNet()
-    config = TrainingConfig(
-        epochs=1,
-        task=DummyTask()
-    )
+    config = TrainingConfig(epochs=1, task=DummyTask())
 
     trainer = MedicalImageTrainer(ds, model, config)
     results = trainer.train()
@@ -541,9 +549,9 @@ def test_training_run_records_lifecycle_timestamps(tmp_path, evidence_output_dir
     ):
         report.error("Training lifecycle timestamps are out of order", "DOC-004")
 
-    report.info(f"Training lifecycle: start={results.training_start_time}, end={results.training_end_time}", "DOC-004")
-    report.auto_save(
-        "DOC004_training_lifecycle_timestamps",
-        evidence_output_dir
+    report.info(
+        f"Training lifecycle: start={results.training_start_time}, end={results.training_end_time}",
+        "DOC-004",
     )
+    report.auto_save("DOC004_training_lifecycle_timestamps", evidence_output_dir)
     assert not report.has_errors, report.summary()
